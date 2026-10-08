@@ -1,0 +1,14 @@
+{
+  "name": "heritagex",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npm --prefix backend run dev",
+    "build": "npm --prefix backend run build",
+    "start": "npm --prefix backend run start",
+    "test": "npm --prefix backend run test"
+  },
+  "dependencies": {
+    "@neon/config": "^1.8.4",
+    "@neon/env": "^1.5.1"
+  }
+}

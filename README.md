@@ -482,9 +482,8 @@ This repository represents the completed frontend implementation for the current
 - **Domain:** Smart Tourism & Cultural Heritage
 - **Project:** HeritageX
 - **Frontend URL:** [https://heritage-x.netlify.app/](https://heritage-x.netlify.app/)
-- **Admin Login Frontend URL:** [https://heritage-x.netlify.app/admin/login.html](https://heritage-x.netlify.app/admin/login.html)
-- **Admin Login Username or email :** heritagex_admin
-- **Admin Password :** PBL-Demo-2026!
+- **Admin Login URL:** [https://heritage-x.netlify.app/admin/login.html](https://heritage-x.netlify.app/admin/login.html)
+- **Admin Authentication:** Server-side Argon2id verification (seeded via `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`)
 - **Theme:** Digital Tourism and Cultural Heritage Preservation
 - **Vision:** Viksit Bharat @2047
 - **Related SDGs:** SDG 8 (Decent Work and Economic Growth), SDG 11 (Sustainable Cities and Communities), SDG 12 (Responsible Consumption and Production)

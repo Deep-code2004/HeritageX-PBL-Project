@@ -1,0 +1,202 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  passwordHash  String
+  role          Role           @default(USER)
+  isActive      Boolean        @default(true)
+  failedLogins  Int            @default(0)
+  lockedUntil   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  preference    Preference?
+  reviews       Review[]
+  saved         SavedPlace[]
+  itineraries   Itinerary[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Preference {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  interests      String[]
+  travelStyle    String?  // walking | transit | bikecar
+  timeBudget     String?  // 1h | 2h | half | full
+  preferredArea  String?  // bhadra | kalupur | riverfront | station
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id    String         @id @default(cuid())
+  name  String         @unique
+  slug  String         @unique
+  color String?
+  sites HeritageSite[]
+}
+
+model HeritageSite {
+  id                     Int                @id // Keeps exact legacy IDs 1..15 for backwards compatibility
+  slug                   String             @unique
+  name                   String
+  categoryId             String
+  categoryName           String             // Cached category string for fast lookups
+  tags                   String[]
+  interests              String[]
+  shortDescription       String             @db.Text
+  history                String?            @db.Text
+  culturalSignificance   String?            @db.Text
+  architecture           String?            @db.Text
+  image                  String
+  gallery                String[]
+  latitude               Float
+  longitude              Float
+  rating                 Float              @default(0.0)
+  reviewCount            Int                @default(0)
+  duration               String             // e.g. "45–60 min"
+  durationMinutes        Int                @default(60) // Numeric helper for recommendation filter
+  timings                String?
+  entryFee               String?
+  nearbyPlaces           Int[]              // Array of site IDs
+  responsibleGuidelines  String[]
+  verified               Boolean            @default(true)
+  verification           VerificationStatus @default(VERIFIED)
+  source                 String?            @db.Text
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  category               Category           @relation(fields: [categoryId], references: [id])
+  reviews                Review[]
+  savedPlaces            SavedPlace[]
+  itineraryStops         ItineraryStop[]
+
+  @@index([categoryId])
+  @@index([latitude, longitude])
+  @@index([verification])
+  @@index([rating])
+}
+
+model Review {
+  id        String       @id @default(cuid())
+  siteId    Int
+  userId    String
+  author    String
+  rating    Int
+  comment   String       @db.Text
+  helpful   Int          @default(0)
+  status    ReviewStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  site      HeritageSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, userId])
+  @@index([status])
+}
+
+model SavedPlace {
+  id        String       @id @default(cuid())
+  userId    String
+  siteId    Int
+  createdAt DateTime     @default(now())
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site      HeritageSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, siteId])
+}
+
+model Itinerary {
+  id           String          @id @default(cuid())
+  userId       String
+  title        String
+  notes        String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stops        ItineraryStop[]
+}
+
+model ItineraryStop {
+  id          String       @id @default(cuid())
+  itineraryId String
+  siteId      Int
+  position    Int
+  visitTime   String?
+
+  itinerary   Itinerary    @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  site        HeritageSite @relation(fields: [siteId], references: [id])
+
+  @@unique([itineraryId, position])
+}
+
+model Culture {
+  id        String   @id // e.g. "food", "crafts", "festivals", "pol-life"
+  title     String
+  icon      String   // Bootstrap icon class e.g. "bi-egg-fried"
+  summary   String   @db.Text
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+}
+
+model HeritageWalk {
+  id            String   @id // e.g. "morning-walk", "evening-walk"
+  title         String
+  type          String   // "Morning", "Evening"
+  duration      String   // "2.5 hours"
+  difficulty    String   // "Easy", "Moderate"
+  stops         Int
+  startingPoint String
+  endingPoint   String
+  route         Int[]    // Array of site IDs [7, 12, 13, 15, 5, 3, 6]
+  culturalStory String   @db.Text
+  createdAt     DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  meta      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+}

@@ -92,7 +92,7 @@
             this.setAttribute("aria-label", showing ? "Show password" : "Hide password");
         });
 
-        form.addEventListener("submit", function (e) {
+        form.addEventListener("submit", async function (e) {
             e.preventDefault();
             errorBox.classList.add("d-none");
 
@@ -104,23 +104,17 @@
             loginBtnText.textContent = "Signing in…";
             loginSpinner.classList.remove("d-none");
 
-            // Simulated latency so the loading state is visible in the demo —
-            // a real backend call would replace this timeout entirely.
-            setTimeout(() => {
-                const result = loginAdmin(username, password);
-                loginBtn.disabled = false;
-                loginBtnText.textContent = "Log in";
-                loginSpinner.classList.add("d-none");
+            const result = await loginAdmin(username, password);
+            loginBtn.disabled = false;
+            loginBtnText.textContent = "Log in";
+            loginSpinner.classList.add("d-none");
 
-                if (result.success) {
-                    window.location.href = "dashboard.html";
-                } else {
-                    // Deliberately generic — never reveal whether the username or
-                    // password was the incorrect part.
-                    errorBox.textContent = "Invalid administrator credentials.";
-                    errorBox.classList.remove("d-none");
-                }
-            }, 500);
+            if (result.success) {
+                window.location.href = "dashboard.html";
+            } else {
+                errorBox.textContent = result.message || "Invalid administrator credentials.";
+                errorBox.classList.remove("d-none");
+            }
         });
     </script>
 </body>
