@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="pageTitle">Heritage Site | HeritageX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="../styles/style.css">
+</head>
+
+<body>
+  <a href="#main" class="skip-link">Skip to main content</a>
+
+  <nav class="navbar navbar-expand-lg hx-navbar sticky-top" aria-label="Main navigation">
+    <div class="container">
+      <a class="navbar-brand" href="../index.html"><span class="brand-mark"><i
+            class="bi bi-bank2"></i></span>HeritageX</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
+        aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+      <div class="collapse navbar-collapse" id="navMain">
+        <ul class="navbar-nav mx-auto">
+          <li class="nav-item"><a class="nav-link" href="../index.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link active" href="../Pages/explore.html">Explore</a></li>
+          <li class="nav-item"><a class="nav-link" href="../Pages/recommendations.html">Smart Recommendations</a></li>
+          <li class="nav-item"><a class="nav-link" href="../Pages/map.html">Map</a></li>
+          <li class="nav-item"><a class="nav-link" href="../Pages/itinerary.html">Plan Trip</a></li>
+          <li class="nav-item"><a class="nav-link" href="../Pages/culture.html">Culture</a></li>
+          <li class="nav-item"><a class="nav-link" href="../Pages/heritage-walks.html">Heritage Walks</a></li>
+          <li class="nav-item"><a class="nav-link" href="../Pages/about.html">About Ahmedabad</a></li>
+        </ul>
+        <div class="d-flex align-items-center gap-1 mt-3 mt-lg-0">
+          <a href="../Pages/saved.html" class="nav-icon-btn" aria-label="Saved places"><i
+              class="bi bi-bookmark-heart"></i></a>
+          <div class="dropdown">
+            <button class="nav-icon-btn btn btn-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
+              aria-label="Profile menu"><i class="bi bi-person-circle"></i></button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <h6 class="dropdown-header">Demo Visitor</h6>
+              </li>
+              <li><a class="dropdown-item" href="../Pages/saved.html"><i class="bi bi-bookmark-heart me-2"></i>Saved
+                  places</a></li>
+              <li><a class="dropdown-item" href="../Pages/itinerary.html"><i class="bi bi-map me-2"></i>My itinerary</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main">
+    <div id="detailRoot" class="container py-4"><!-- populated by detail.js --></div>
+  </main>
+
+  <footer class="hx-footer py-5" id="siteFooter"></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/main.js"></script>
+  <script src="../js/footer.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const params = new URLSearchParams(window.location.search);
+      const slug = params.get("slug");
+      const site = slug ? getSiteBySlug(slug) : getAllSites()[0];
+      const root = document.getElementById("detailRoot");
+
+      if (!site) {
+        root.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-circle"></i><h2 class="h4 mt-3">Site not found</h2><p>This heritage record may have been moved or renamed.</p><a href="explore.html" class="btn btn-maroon">Back to Explore</a></div>`;
+        return;
+      }
+
+      document.title = `${site.name} | HeritageX`;
+
+      const nearby = getSitesByIds(site.nearbyPlaces || []);
+      const reviews = getReviews(site.id);
+      const bookmarked = isBookmarked(site.id);
+
+      root.innerHTML = `
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="../index.html">Home</a></li>
+        <li class="breadcrumb-item"><a href="explore.html">Explore</a></li>
+        <li class="breadcrumb-item active" aria-current="page">${site.name}</li>
+      </ol>
+    </nav>
+
+    <div class="row g-2 mb-4" id="galleryRow">
+      <div class="col-md-8">
+        <div class="rounded-4 overflow-hidden" style="aspect-ratio:16/10;">
+          <img src="${site.gallery[0]}" alt="${site.name}" class="w-100 h-100" style="object-fit:cover;">
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="filter-panel mb-3" style="position:sticky; top:90px;">
+          <h3 class="h6 mb-2">Plan your visit</h3>
+          <p class="small mb-1"><i class="bi bi-clock text-maroon me-2"></i><strong>Timings:</strong> ${site.timings}</p>
+          <p class="small mb-1"><i class="bi bi-ticket-perforated text-maroon me-2"></i><strong>Entry:</strong> ${site.entryFee}</p>
+          <p class="small mb-3"><i class="bi bi-hourglass text-maroon me-2"></i><strong>Suggested duration:</strong> ${site.duration}</p>
+          <div class="d-grid gap-2">
+            <button class="btn btn-maroon" id="addToTripBtn"><i class="bi bi-plus-circle me-1"></i> Add to Trip</button>
+            <button class="btn btn-outline-maroon" id="directionsBtn"><i class="bi bi-signpost-2 me-1"></i> Get Directions</button>
+            <button class="btn btn-outline-maroon" id="bookmarkDetailBtn"><i class="bi ${bookmarked ? "bi-bookmark-fill" : "bi-bookmark"} me-1"></i> ${bookmarked ? "Saved" : "Save Place"}</button>
+            <button class="btn btn-outline-maroon" id="shareBtn"><i class="bi bi-share me-1"></i> Share</button>
+          </div>
+          <hr>
+          <span class="verified-badge"><i class="bi bi-patch-check-fill"></i> Verified Heritage Information</span>
+          <p class="small text-charcoal-soft mt-2 mb-0">Source: ${site.source}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-5">
+      <div class="col-lg-8">
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+          <span class="card-cat-badge" style="position:static;">${site.category}</span>
+          ${site.category.includes("Sultanate") || site.tags.includes("UNESCO Core") ? `<span class="badge-unesco" style="background:var(--sandstone-tint);color:var(--maroon);border-color:var(--line);"><i class="bi bi-award"></i> UNESCO City Heritage</span>` : ""}
+          ${site.verified ? `<span class="verified-badge"><i class="bi bi-patch-check-fill"></i> Verified</span>` : ""}
+        </div>
+        <h1 class="display-font mb-2">${site.name}</h1>
+        <div class="d-flex flex-wrap gap-3 mb-3 text-charcoal-soft small">
+          <span><i class="bi bi-star-fill text-warning"></i> ${site.rating.toFixed(1)} (${site.reviewCount} reviews)</span>
+          <span><i class="bi bi-clock"></i> ${site.duration}</span>
+          <span><i class="bi bi-geo-alt"></i> ${distanceKm(DEMO_USER_LOCATION.latitude, DEMO_USER_LOCATION.longitude, site.latitude, site.longitude).toFixed(1)} km from Lal Darwaza</span>
+        </div>
+        <p class="lead" style="font-size:1.1rem;">${site.shortDescription}</p>
+
+        <h2 class="h4 mt-4">The story</h2>
+        <p class="text-charcoal-soft">${site.history}</p>
+
+        <h2 class="h4 mt-4">Cultural significance</h2>
+        <p class="text-charcoal-soft">${site.culturalSignificance}</p>
+
+        <h2 class="h4 mt-4">Architectural features</h2>
+        <p class="text-charcoal-soft">${site.architecture}</p>
+
+        <h2 class="h4 mt-4">Respectful-visitor guidelines</h2>
+        <ul class="text-charcoal-soft">
+          ${site.responsibleGuidelines.map((g) => `<li>${g}</li>`).join("")}
+        </ul>
+
+        <h2 class="h4 mt-4">Location &amp; nearby</h2>
+        <div id="detailMap" style="height:320px;" class="mb-3"></div>
+        ${nearby.length ? `
+          <h2 class="h4 mt-4">Explore nearby</h2>
+          <div class="row g-3">
+            ${nearby.map((n) => `<div class="col-md-4">${siteCardHTML(n)}</div>`).join("")}
+          </div>` : ""}
+
+        <h2 class="h4 mt-5">Reviews</h2>
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <span class="display-font" style="font-size:2rem;color:var(--maroon);">${site.rating.toFixed(1)}</span>
+          <div>
+            <div class="text-warning">${"★".repeat(Math.round(site.rating))}${"☆".repeat(5 - Math.round(site.rating))}</div>
+            <div class="small text-charcoal-soft">${site.reviewCount} verified visitor reviews</div>
+          </div>
+          <select id="reviewSort" class="form-select form-select-sm ms-auto" style="width:auto;" aria-label="Sort reviews">
+            <option value="helpful">Most helpful</option>
+            <option value="recent">Most recent</option>
+          </select>
+        </div>
+        <div id="reviewList"></div>
+
+        <div class="filter-panel mt-4">
+          <h3 class="h6">Write a review <span class="small text-charcoal-soft fw-normal">(demo — held for moderation)</span></h3>
+          <form id="reviewForm">
+            <div class="mb-2">
+              <label class="form-label small">Your rating</label><br>
+              <div id="starPicker" role="radiogroup" aria-label="Star rating">
+                ${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="btn btn-link p-0 me-1 star-btn" data-star="${n}" aria-label="${n} star" style="font-size:1.4rem;color:var(--sandstone);"><i class="bi bi-star-fill"></i></button>`).join("")}
+              </div>
+              <input type="hidden" id="starValue" value="0">
+            </div>
+            <div class="mb-2">
+              <label for="reviewText" class="form-label small">Your review</label>
+              <textarea id="reviewText" class="form-control" rows="3" required placeholder="What stood out about your visit?"></textarea>
+            </div>
+            <button class="btn btn-maroon" type="submit">Submit review</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
+
+      // Bookmark buttons
+      document.getElementById("bookmarkDetailBtn").addEventListener("click", () => {
+        const nowActive = toggleBookmark(site.id);
+        const btn = document.getElementById("bookmarkDetailBtn");
+        btn.innerHTML = `<i class="bi ${nowActive ? "bi-bookmark-fill" : "bi-bookmark"} me-1"></i> ${nowActive ? "Saved" : "Save Place"}`;
+      });
+
+      document.getElementById("addToTripBtn").addEventListener("click", () => {
+        const itinerary = lsGet(LS_KEYS.itinerary, []);
+        if (itinerary.find((i) => i.siteId === site.id)) {
+          showToast("Already in your trip", "bi-info-circle", site.name);
+          return;
+        }
+        itinerary.push({ siteId: site.id, time: "" });
+        lsSet(LS_KEYS.itinerary, itinerary);
+        showToast("Added to your trip", "bi-map", site.name);
+      });
+
+      document.getElementById("directionsBtn").addEventListener("click", () => {
+        window.open(`https://www.openstreetmap.org/directions?to=${site.latitude}%2C${site.longitude}`, "_blank", "noopener");
+      });
+
+      document.getElementById("shareBtn").addEventListener("click", () => {
+        const url = window.location.href;
+        if (navigator.share) {
+          navigator.share({ title: site.name, url });
+        } else {
+          navigator.clipboard?.writeText(url);
+          showToast("Link copied to clipboard", "bi-link-45deg", site.name);
+        }
+      });
+
+      // Star picker
+      let selectedStar = 0;
+      document.querySelectorAll(".star-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          selectedStar = Number(btn.dataset.star);
+          document.getElementById("starValue").value = selectedStar;
+          document.querySelectorAll(".star-btn").forEach((b) => {
+            b.style.color = Number(b.dataset.star) <= selectedStar ? "var(--gold)" : "var(--sandstone)";
+          });
+        });
+      });
+
+      function renderReviews(sortMode) {
+        const key = `${LS_KEYS.reviews}_${site.id}`;
+        const userReviews = lsGet(key, []);
+        let all = [...userReviews, ...reviews];
+        if (sortMode === "recent") all.sort((a, b) => new Date(b.date) - new Date(a.date));
+        else all.sort((a, b) => b.helpful - a.helpful);
+        const listEl = document.getElementById("reviewList");
+        if (!all.length) {
+          listEl.innerHTML = `<p class="text-charcoal-soft small">No reviews yet — be the first to share your visit.</p>`;
+          return;
+        }
+        listEl.innerHTML = all.map((r) => `
+      <div class="border-bottom py-3">
+        <div class="d-flex justify-content-between">
+          <strong>${r.author}${r.pending ? ' <span class="badge bg-secondary">Pending moderation</span>' : ""}</strong>
+          <span class="text-warning small">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span>
+        </div>
+        <p class="mb-1 text-charcoal-soft small">${r.text}</p>
+        <div class="d-flex justify-content-between small text-charcoal-soft">
+          <span>${r.date}</span>
+          <button class="btn btn-link btn-sm p-0 text-maroon helpful-btn" data-helpful="${r.helpful}">Helpful (${r.helpful})</button>
+        </div>
+      </div>`).join("");
+        listEl.querySelectorAll(".helpful-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const n = Number(btn.dataset.helpful) + 1;
+            btn.dataset.helpful = n;
+            btn.textContent = `Helpful (${n})`;
+            btn.disabled = true;
+          });
+        });
+      }
+      renderReviews("helpful");
+      document.getElementById("reviewSort").addEventListener("change", (e) => renderReviews(e.target.value));
+
+      document.getElementById("reviewForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const text = document.getElementById("reviewText").value.trim();
+        if (!text || selectedStar === 0) {
+          showToast("Add a star rating and a review", "bi-exclamation-circle");
+          return;
+        }
+        const key = `${LS_KEYS.reviews}_${site.id}`;
+        const userReviews = lsGet(key, []);
+        userReviews.unshift({
+          id: "u" + Date.now(),
+          author: "You",
+          rating: selectedStar,
+          text,
+          date: new Date().toISOString().slice(0, 10),
+          helpful: 0,
+          pending: true
+        });
+        lsSet(key, userReviews);
+        document.getElementById("reviewForm").reset();
+        selectedStar = 0;
+        document.querySelectorAll(".star-btn").forEach((b) => (b.style.color = "var(--sandstone)"));
+        showToast("Review submitted for moderation", "bi-check-circle-fill");
+        renderReviews(document.getElementById("reviewSort").value);
+      });
+
+      // Detail map
+      const map = L.map("detailMap").setView([site.latitude, site.longitude], 15);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap contributors" }).addTo(map);
+      L.marker([site.latitude, site.longitude]).addTo(map).bindPopup(`<strong>${site.name}</strong>`).openPopup();
+      nearby.forEach((n) => L.circleMarker([n.latitude, n.longitude], { radius: 6, color: "#C17A45" }).addTo(map).bindPopup(n.name));
+    });
+  </script>
+</body>
+
+</html>

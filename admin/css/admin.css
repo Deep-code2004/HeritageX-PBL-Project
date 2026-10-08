@@ -1,0 +1,527 @@
+/* =========================================================================
+   HeritageX — admin.css
+   ========================================================================= */
+
+:root {
+    --admin-bg: #f4f5f7;
+    --admin-panel: #ffffff;
+    --admin-ink: #1f2430;
+    --admin-ink-soft: #667085;
+    --admin-line: #e4e7ec;
+    --admin-maroon: #6e1e24;
+    --admin-maroon-deep: #4a1015;
+    --admin-gold: #a9822c;
+    --admin-sidebar: #1f2430;
+    --admin-sidebar-active: #322a1f;
+}
+
+body.admin-body {
+    background: var(--admin-bg);
+    color: var(--admin-ink);
+    font-family: "Work Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+}
+
+/* ---------- Login screen ---------- */
+
+.admin-login-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 20% 20%, #2c1418 0%, #1f2430 60%, #14161d 100%);
+    padding: 1.5rem;
+}
+
+.admin-login-card {
+    background: var(--admin-panel);
+    border-radius: 18px;
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.45);
+    width: 100%;
+    max-width: 420px;
+    padding: 2.5rem 2.25rem;
+}
+
+.admin-login-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.4rem;
+    color: var(--admin-maroon-deep);
+    margin-bottom: 0.25rem;
+}
+
+.admin-login-brand .mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--admin-maroon);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--admin-gold);
+}
+
+.admin-input-group {
+    position: relative;
+}
+
+.admin-input-group .toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--admin-ink-soft);
+}
+
+.btn-admin-primary {
+    background: var(--admin-maroon);
+    border: 1px solid var(--admin-maroon);
+    color: #fff;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0.65rem 1rem;
+}
+
+.btn-admin-primary:hover {
+    background: var(--admin-maroon-deep);
+    border-color: var(--admin-maroon-deep);
+    color: #fff;
+}
+
+.btn-admin-primary:disabled {
+    opacity: 0.7;
+}
+
+.admin-error-box {
+    background: #fdecea;
+    border: 1px solid #f5c2c0;
+    color: #9c1c17;
+    border-radius: 10px;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.88rem;
+}
+
+.admin-demo-note {
+    background: #fff8e8;
+    border: 1px solid #f0dfa8;
+    color: #6b5417;
+    border-radius: 10px;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.8rem;
+}
+
+
+/* ---------- Dashboard shell ---------- */
+
+.admin-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.admin-sidebar {
+    width: 250px;
+    flex-shrink: 0;
+    background: var(--admin-sidebar);
+    color: #d7dae0;
+    display: flex;
+    flex-direction: column;
+    padding: 1.4rem 1rem;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    z-index: 1050;
+
+    /* Important: allows sidebar content to scroll */
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    /* Smooth scrolling on mobile */
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Optional: cleaner sidebar scrollbar */
+
+.admin-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.admin-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.admin-sidebar .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: #fff;
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.2rem;
+    padding: 0 0.25rem 1.2rem;
+    margin-bottom: 0.6rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+    /* Prevent brand from shrinking */
+    flex-shrink: 0;
+}
+
+.admin-sidebar .brand .mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--admin-gold);
+    color: #221a0c;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Close button — only visible on mobile */
+
+.sidebar-close-btn {
+    display: none;
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.sidebar-close-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+
+/* ---------- Sidebar navigation ---------- */
+
+.admin-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 10px;
+    color: #b7bbc6;
+    font-size: 0.92rem;
+    font-weight: 500;
+    text-decoration: none;
+    margin-bottom: 0.15rem;
+}
+
+.admin-nav-link i {
+    font-size: 1.05rem;
+    width: 20px;
+    text-align: center;
+}
+
+.admin-nav-link:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+}
+
+.admin-nav-link.active {
+    background: var(--admin-sidebar-active);
+    color: #fff;
+}
+
+
+/* ---------- Sidebar footer / Logout ---------- */
+
+.admin-sidebar .sidebar-footer {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+    /* Prevent logout section from shrinking */
+    flex-shrink: 0;
+}
+
+
+/* ---------- Main area ---------- */
+
+.admin-main {
+    flex: 1;
+    min-width: 0;
+}
+
+
+/* ---------- Topbar ---------- */
+
+.admin-topbar {
+    background: var(--admin-panel);
+    border-bottom: 1px solid var(--admin-line);
+    padding: 0.9rem 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.admin-topbar .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    min-width: 0;
+}
+
+.admin-topbar h1 {
+    font-size: 1.05rem;
+    margin: 0;
+    font-weight: 700;
+    color: var(--admin-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-topbar .admin-user {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.86rem;
+    color: var(--admin-ink-soft);
+    flex-shrink: 0;
+}
+
+.admin-topbar .admin-user .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--admin-maroon);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+#sidebarToggle {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+
+/* ---------- Content ---------- */
+
+.admin-content {
+    padding: 1.6rem;
+}
+
+.admin-panel-card {
+    background: var(--admin-panel);
+    border: 1px solid var(--admin-line);
+    border-radius: 14px;
+}
+
+
+/* ---------- Statistics ---------- */
+
+.admin-stat-card {
+    background: var(--admin-panel);
+    border: 1px solid var(--admin-line);
+    border-radius: 14px;
+    padding: 1.1rem 1.3rem;
+}
+
+.admin-stat-card .num {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--admin-maroon);
+}
+
+.admin-stat-card .label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--admin-ink-soft);
+}
+
+
+/* ---------- Demo banner ---------- */
+
+.admin-demo-banner {
+    background: #fff8e8;
+    border: 1px solid #f0dfa8;
+    color: #6b5417;
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
+}
+
+
+/* ---------- Quick links ---------- */
+
+.admin-quicklink-card {
+    background: var(--admin-panel);
+    border: 1px solid var(--admin-line);
+    border-radius: 14px;
+    padding: 1.4rem;
+    display: block;
+    text-decoration: none;
+    color: var(--admin-ink);
+    height: 100%;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.admin-quicklink-card:hover {
+    box-shadow: 0 10px 24px -12px rgba(31, 36, 48, 0.25);
+    transform: translateY(-2px);
+    color: var(--admin-ink);
+}
+
+.admin-quicklink-card i {
+    font-size: 1.6rem;
+    color: var(--admin-maroon);
+    margin-bottom: 0.6rem;
+    display: block;
+}
+
+
+/* ---------- Mobile sidebar backdrop ---------- */
+
+.admin-sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 17, 22, 0.5);
+    z-index: 1040;
+}
+
+
+/* =========================================================================
+   Tablet / Mobile
+   ========================================================================= */
+
+@media (max-width: 991.98px) {
+
+    .admin-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+
+        width: 250px;
+
+        /* Better mobile viewport handling */
+        height: 100dvh;
+        max-height: 100dvh;
+
+        transform: translateX(-100%);
+        transition: transform 0.22s ease;
+
+        box-shadow: 12px 0 30px -18px rgba(0, 0, 0, 0.4);
+
+        /* Allow the complete sidebar to scroll */
+        overflow-y: auto;
+        overflow-x: hidden;
+
+        /* Better mobile scrolling */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .admin-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .sidebar-close-btn {
+        display: inline-flex;
+    }
+
+    .admin-sidebar-backdrop.show {
+        display: block;
+    }
+
+    .admin-content {
+        padding: 1rem;
+    }
+
+    .admin-topbar {
+        padding: 0.75rem 1rem;
+    }
+}
+
+
+/* =========================================================================
+   Small mobile screens
+   ========================================================================= */
+
+@media (max-width: 575.98px) {
+
+    .admin-sidebar {
+        width: min(280px, 85vw);
+    }
+
+    .admin-topbar {
+        padding: 0.7rem 0.8rem;
+    }
+
+    .admin-topbar .admin-user>span:last-child {
+        display: none;
+    }
+
+    .admin-content {
+        padding: 0.75rem;
+    }
+
+    .admin-stat-card {
+        padding: 0.9rem 0.75rem;
+    }
+
+    .admin-stat-card .num {
+        font-size: 1.7rem;
+    }
+
+    .admin-stat-card .label {
+        font-size: 0.7rem;
+    }
+}
+
+
+/* =========================================================================
+   Desktop
+   ========================================================================= */
+
+@media (min-width: 992px) {
+
+    #sidebarToggle {
+        display: none;
+    }
+}

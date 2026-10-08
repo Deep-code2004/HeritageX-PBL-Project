@@ -1,0 +1,1349 @@
+/* ---------------------------
+   HeritageX — style.css
+   Design tokens
+   Color   ivory #F7F2E7 · maroon #6E1E24 · maroon-deep #4A1015
+           terracotta #C17A45 · sandstone #E4D3B4 · charcoal #2A2420
+           gold #A9822C
+   Type    Display: 'Fraunces' (heritage stone-carved serif, used with restraint)
+           Body:    'Work Sans'
+           Utility: 'Work Sans' uppercase + letter-spacing for labels/data
+   Signature: a carved sandstone "jali" lattice motif — used as a hairline
+           section divider, a card corner ornament, and an arch-shaped
+           image frame — echoing Sidi Saiyyed's carved stone screens.
+   --------------------------- */
+
+:root {
+    --ivory: #f8f3e8;
+    --ivory-deep: #f1e9d8;
+    --maroon: #6e1e24;
+    --maroon-deep: #4a1015;
+    --maroon-soft: #8a3037;
+    --terracotta: #c17a45;
+    --terracotta-soft: #dba679;
+    --sandstone: #e4d3b4;
+    --sandstone-tint: #f0e4cc;
+    --charcoal: #2a2420;
+    --charcoal-soft: #574f47;
+    --gold: #a9822c;
+    --gold-soft: #cba75a;
+    --line: rgba(42, 36, 32, 0.12);
+
+    --font-display: "Fraunces", "Georgia", serif;
+    --font-body: "Work Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+
+    --radius-lg: 22px;
+    --radius-md: 14px;
+    --radius-sm: 8px;
+    --shadow-soft: 0 10px 30px -12px rgba(42, 24, 16, 0.25);
+    --shadow-card: 0 6px 20px -10px rgba(42, 24, 16, 0.22);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-body);
+    background: var(--ivory);
+    color: var(--charcoal);
+    line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+.display-font {
+    font-family: var(--font-display);
+    color: var(--maroon-deep);
+    letter-spacing: -0.01em;
+}
+
+a {
+    color: var(--maroon);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--terracotta);
+}
+
+.eyebrow {
+    font-family: var(--font-body);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--terracotta);
+}
+
+.text-maroon {
+    color: var(--maroon) !important;
+}
+
+.text-charcoal-soft {
+    color: var(--charcoal-soft) !important;
+}
+
+.bg-ivory {
+    background: var(--ivory) !important;
+}
+
+.bg-ivory-deep {
+    background: var(--ivory-deep) !important;
+}
+
+.bg-sandstone-tint {
+    background: var(--sandstone-tint) !important;
+}
+
+.bg-maroon {
+    background: var(--maroon) !important;
+}
+
+:focus-visible {
+    outline: 2px solid var(--terracotta);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+    }
+}
+
+/* ---------- Jali lattice signature motif ---------- */
+.jali-bg {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='none' stroke='%23a9822c' stroke-width='1' opacity='0.16'%3E%3Ccircle cx='60' cy='60' r='38'/%3E%3Ccircle cx='0' cy='0' r='38'/%3E%3Ccircle cx='120' cy='0' r='38'/%3E%3Ccircle cx='0' cy='120' r='38'/%3E%3Ccircle cx='120' cy='120' r='38'/%3E%3Cpath d='M60 22 L98 60 L60 98 L22 60 Z'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 120px 120px;
+}
+
+.jali-divider {
+    height: 34px;
+    background-repeat: repeat-x;
+    background-position: center;
+    background-size: 60px 34px;
+    opacity: 0.55;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='34'%3E%3Cg fill='none' stroke='%236e1e24' stroke-width='1.4'%3E%3Ccircle cx='30' cy='17' r='15'/%3E%3Ccircle cx='0' cy='17' r='15'/%3E%3Ccircle cx='60' cy='17' r='15'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.arch-frame {
+    border-radius: 50% 50% 6px 6px / 30% 30% 6px 6px;
+    overflow: hidden;
+    border: 6px solid var(--ivory);
+    box-shadow: var(--shadow-soft);
+}
+
+/* ---------- Navbar ---------- */
+.hx-navbar {
+    background: var(--ivory);
+    border-bottom: 1px solid var(--line);
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+}
+
+.hx-navbar .navbar-brand {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.5rem;
+    color: var(--maroon-deep);
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.hx-navbar .navbar-brand .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--maroon);
+    color: var(--sandstone-tint);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.hx-navbar .nav-link {
+    color: var(--charcoal);
+    font-weight: 500;
+    font-size: 0.94rem;
+    padding: 0.5rem 0.85rem !important;
+}
+
+.hx-navbar .nav-link.active,
+.hx-navbar .nav-link:hover {
+    color: var(--maroon);
+}
+
+.hx-navbar .nav-icon-btn {
+    color: var(--maroon-deep);
+    font-size: 1.15rem;
+    padding: 0.35rem 0.5rem;
+    position: relative;
+}
+
+.hx-navbar .nav-icon-btn .badge-dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--terracotta);
+    border: 2px solid var(--ivory);
+}
+
+/* ---------- Buttons ---------- */
+.btn-maroon {
+    background: var(--maroon);
+    border: 1px solid var(--maroon);
+    color: var(--ivory);
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 0.65rem 1.5rem;
+}
+
+.btn-maroon:hover {
+    background: var(--maroon-deep);
+    border-color: var(--maroon-deep);
+    color: var(--ivory);
+}
+
+.btn-outline-maroon {
+    background: transparent;
+    border: 1.5px solid var(--maroon);
+    color: var(--maroon);
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 0.6rem 1.45rem;
+}
+
+.btn-outline-maroon:hover {
+    background: var(--maroon);
+    color: var(--ivory);
+}
+
+.btn-gold {
+    background: var(--gold);
+    border: 1px solid var(--gold);
+    color: var(--maroon-deep);
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 0.6rem 1.45rem;
+}
+
+.btn-gold:hover {
+    background: var(--gold-soft);
+    color: var(--maroon-deep);
+}
+
+.btn-ghost-ivory {
+    background: rgba(248, 243, 232, 0.14);
+    border: 1.5px solid rgba(248, 243, 232, 0.6);
+    color: var(--ivory);
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 0.65rem 1.5rem;
+    backdrop-filter: blur(2px);
+}
+
+.btn-ghost-ivory:hover {
+    background: rgba(248, 243, 232, 0.22);
+    color: #fff;
+}
+
+/* ---------- Hero ---------- */
+.hero {
+    position: relative;
+    min-height: 86vh;
+    display: flex;
+    align-items: flex-end;
+
+    background:
+        linear-gradient(180deg,
+            rgba(31, 14, 10, 0.38) 0%,
+            rgba(31, 14, 10, 0.75) 55%,
+            rgba(31, 14, 10, 0.80) 100%),
+        url("https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Ahmedabad_Kalupur_Swaminarayan_Temple.jpg/1280px-Ahmedabad_Kalupur_Swaminarayan_Temple.jpg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail") center/cover no-repeat;
+
+    color: var(--ivory);
+    border-radius: 0 0 40px 40px;
+    overflow: hidden;
+}
+
+.hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cg fill='none' stroke='%23f8f3e8' stroke-width='1' opacity='0.10'%3E%3Ccircle cx='70' cy='70' r='44'/%3E%3Ccircle cx='0' cy='0' r='44'/%3E%3Ccircle cx='140' cy='0' r='44'/%3E%3Ccircle cx='0' cy='140' r='44'/%3E%3Ccircle cx='140' cy='140' r='44'/%3E%3C/g%3E%3C/svg%3E");
+
+    background-size: 140px 140px;
+    pointer-events: none;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 3.5rem 0 4rem;
+}
+
+.badge-unesco {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(248, 243, 232, 0.16);
+    border: 1px solid rgba(248, 243, 232, 0.5);
+    color: var(--ivory);
+    border-radius: 999px;
+    padding: 0.4rem 1rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    backdrop-filter: blur(2px);
+}
+
+.hero h1 {
+    color: var(--ivory);
+    font-size: clamp(2.4rem, 5.2vw, 4.2rem);
+    font-weight: 600;
+    line-height: 1.04;
+}
+
+.hero .hero-sub {
+    color: var(--sandstone-tint);
+    font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+    max-width: 640px;
+}
+
+.hero-search {
+    background: var(--ivory);
+    border-radius: 999px;
+    padding: 0.4rem 0.5rem 0.4rem 1.3rem;
+    box-shadow: var(--shadow-soft);
+    max-width: 620px;
+}
+
+.hero-search input {
+    border: none;
+    background: transparent;
+    flex: 1;
+    font-size: 0.98rem;
+    color: var(--charcoal);
+}
+
+.hero-search input:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+/* ---------- Section scaffolding ---------- */
+.section {
+    padding: 5rem 0;
+}
+
+.section-tight {
+    padding: 3.25rem 0;
+}
+
+.section-title {
+    font-size: clamp(1.7rem, 2.6vw, 2.4rem);
+    font-weight: 600;
+}
+
+.section-lede {
+    color: var(--charcoal-soft);
+    max-width: 620px;
+}
+
+/* ---------- Cards ---------- */
+.hx-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    height: 100%;
+}
+
+.hx-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 34px -14px rgba(42, 24, 16, 0.32);
+}
+
+.hx-card .card-img-wrap {
+    position: relative;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+}
+
+.hx-card .card-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.hx-card .card-cat-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(248, 243, 232, 0.92);
+    color: var(--maroon);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+}
+
+.bookmark-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(42, 24, 16, 0.35);
+    color: #fff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+}
+
+.bookmark-btn.active {
+    background: var(--terracotta);
+    color: #fff;
+}
+
+.bookmark-btn:hover {
+    background: var(--maroon);
+}
+
+.hx-card .card-body-custom {
+    padding: 1.1rem 1.25rem 1.3rem;
+}
+
+.hx-card h3,
+.hx-card h5 {
+    font-size: 1.08rem;
+    margin-bottom: 0.2rem;
+}
+
+.rating-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.82rem;
+    color: var(--charcoal-soft);
+    font-weight: 600;
+}
+
+.rating-pill i {
+    color: var(--gold);
+}
+
+/* Interest / category pill cards on home */
+.interest-card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: #fff;
+    padding: 1.4rem 1.1rem;
+    text-align: center;
+    height: 100%;
+    transition: all 0.16s ease;
+}
+
+.interest-card:hover {
+    border-color: var(--terracotta);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-card);
+}
+
+.interest-card .interest-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: var(--sandstone-tint);
+    color: var(--maroon);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.75rem;
+    font-size: 1.4rem;
+}
+
+/* Editorial culture cards */
+.editorial-card {
+    border-radius: var(--radius-lg);
+    background: #fff;
+    border: 1px solid var(--line);
+    overflow: hidden;
+    height: 100%;
+}
+
+.editorial-card .editorial-head {
+    background: var(--maroon);
+    color: var(--sandstone-tint);
+    padding: 1.4rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.editorial-card .editorial-head i {
+    font-size: 1.5rem;
+    color: var(--gold-soft);
+}
+
+.editorial-card .editorial-body {
+    padding: 1.4rem 1.5rem;
+}
+
+/* ---------- Badges / verification ---------- */
+.verified-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--charcoal-soft);
+    background: var(--sandstone-tint);
+    border-radius: 999px;
+    padding: 0.35rem 0.85rem;
+}
+
+.verified-badge i {
+    color: #2f7a4d;
+}
+
+/* ---------- Footer ---------- */
+.hx-footer {
+    background: var(--maroon-deep);
+    color: var(--sandstone-tint);
+}
+
+.hx-footer a {
+    color: var(--sandstone-tint);
+}
+
+.hx-footer a:hover {
+    color: var(--gold-soft);
+}
+
+.hx-footer h6 {
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+/* ---------- Filters / forms ---------- */
+.filter-panel {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+}
+
+.form-select,
+.form-control {
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    padding: 0.55rem 0.8rem;
+}
+
+.form-select:focus,
+.form-control:focus {
+    border-color: var(--terracotta);
+    box-shadow: 0 0 0 0.2rem rgba(193, 122, 69, 0.18);
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    background: #fff;
+    cursor: pointer;
+    user-select: none;
+}
+
+.chip.active {
+    background: var(--maroon);
+    color: var(--ivory);
+    border-color: var(--maroon);
+}
+
+/* ---------- Steps (recommendations) ---------- */
+.step-indicator {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.step-dot {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1.5px solid var(--line);
+    color: var(--charcoal-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    background: #fff;
+}
+
+.step-dot.active {
+    background: var(--maroon);
+    border-color: var(--maroon);
+    color: var(--ivory);
+}
+
+.step-dot.done {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--maroon-deep);
+}
+
+.step-line {
+    flex: 1;
+    height: 2px;
+    background: var(--line);
+}
+
+.choice-tile {
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 1.1rem;
+    background: #fff;
+    cursor: pointer;
+    text-align: center;
+    height: 100%;
+}
+
+.choice-tile.selected {
+    border-color: var(--maroon);
+    background: var(--sandstone-tint);
+}
+
+.choice-tile i {
+    font-size: 1.6rem;
+    color: var(--maroon);
+    display: block;
+    margin-bottom: 0.4rem;
+}
+
+.match-badge {
+    background: var(--maroon);
+    color: var(--ivory);
+    font-weight: 700;
+    font-size: 0.78rem;
+    border-radius: 999px;
+    padding: 0.3rem 0.7rem;
+}
+
+/* ---------- Map ---------- */
+#map,
+#detailMap,
+#walkMap {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--line);
+}
+
+.map-sidebar {
+    max-height: 640px;
+    overflow-y: auto;
+}
+
+.leaflet-popup-content {
+    font-family: var(--font-body);
+}
+
+/* ---------- Itinerary ---------- */
+.itinerary-item {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1rem;
+    display: flex;
+    gap: 0.9rem;
+    align-items: center;
+    margin-bottom: 0.65rem;
+    cursor: grab;
+}
+
+.itinerary-item.dragging {
+    opacity: 0.45;
+}
+
+.itinerary-time {
+    font-family: var(--font-display);
+    color: var(--maroon);
+    font-weight: 600;
+    min-width: 58px;
+}
+
+.drag-handle {
+    color: var(--charcoal-soft);
+    cursor: grab;
+}
+
+/* ---------- Toast ---------- */
+.hx-toast-container {
+    position: fixed;
+    bottom: 22px;
+    right: 22px;
+    z-index: 2000;
+}
+
+/* ---------- Utility sections ---------- */
+.stat-block {
+    text-align: center;
+}
+
+.stat-block .num {
+    font-family: var(--font-display);
+    font-size: 2.4rem;
+    color: var(--maroon);
+    font-weight: 600;
+}
+
+.stat-block .label {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--charcoal-soft);
+}
+
+.responsible-item {
+    display: flex;
+    gap: 0.9rem;
+    align-items: flex-start;
+    padding: 1rem 0;
+    border-bottom: 1px dashed var(--line);
+}
+
+.responsible-item:last-child {
+    border-bottom: none;
+}
+
+.responsible-item i {
+    color: var(--maroon);
+    font-size: 1.2rem;
+    margin-top: 0.15rem;
+}
+
+.sdg-card {
+    border-radius: var(--radius-md);
+    padding: 1.4rem;
+    color: #fff;
+    height: 100%;
+}
+
+.sdg-8 {
+    background: #A21942;
+}
+
+.sdg-11 {
+    background: #FD9D24;
+    color: var(--charcoal);
+}
+
+.sdg-12 {
+    background: #BF8B2E;
+}
+
+/* ---------- Empty state ---------- */
+.empty-state {
+    text-align: center;
+    padding: 4rem 1rem;
+    color: var(--charcoal-soft);
+}
+
+.empty-state i {
+    font-size: 2.6rem;
+    color: var(--sandstone);
+}
+
+/* ---------- Small screens ---------- */
+@media (max-width: 767.98px) {
+    .hero {
+        min-height: 92vh;
+        border-radius: 0 0 26px 26px;
+    }
+
+    .section {
+        padding: 3.25rem 0;
+    }
+}
+
+/* Skip link */
+.skip-link {
+    position: absolute;
+    left: -999px;
+    top: 0;
+    background: var(--maroon);
+    color: #fff;
+    padding: 0.6rem 1rem;
+    z-index: 3000;
+    border-radius: 0 0 8px 0;
+}
+
+.skip-link:focus {
+    left: 0;
+}
+
+/* ---------- Global horizontal-overflow protection ---------- */
+
+html {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+main,
+header,
+footer,
+section,
+nav,
+article,
+aside {
+    max-width: 100%;
+}
+
+img,
+video,
+canvas,
+svg,
+iframe {
+    max-width: 100%;
+}
+
+img,
+video,
+canvas {
+    height: auto;
+}
+
+.row>* {
+    min-width: 0;
+}
+
+.container,
+.container-fluid {
+    min-width: 0;
+}
+
+.container>*,
+.container-fluid>* {
+    min-width: 0;
+}
+
+
+/* ---------- Navbar ---------- */
+
+.hx-navbar {
+    width: 100%;
+}
+
+.hx-navbar .navbar-brand {
+    flex-shrink: 0;
+}
+
+.hx-navbar .navbar-collapse {
+    min-width: 0;
+}
+
+.hx-navbar .navbar-nav {
+    min-width: 0;
+}
+
+.hx-navbar .nav-link {
+    white-space: normal;
+}
+
+.hx-navbar .navbar-toggler {
+    flex-shrink: 0;
+}
+
+
+/* ---------- Hero ---------- */
+
+.hero {
+    width: 100%;
+    max-width: 100%;
+}
+
+.hero-content {
+    min-width: 0;
+}
+
+.hero h1,
+.hero .hero-sub {
+    overflow-wrap: break-word;
+}
+
+.hero-search {
+    width: 100%;
+    max-width: 620px;
+    min-width: 0;
+}
+
+.hero-search input {
+    min-width: 0;
+    width: 100%;
+}
+
+
+/* ---------- Heritage cards ---------- */
+
+.hx-card {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+}
+
+.hx-card .card-img-wrap {
+    width: 100%;
+    min-width: 0;
+}
+
+.hx-card .card-img-wrap img {
+    width: 100%;
+    max-width: 100%;
+}
+
+.hx-card .card-body-custom {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.hx-card h3,
+.hx-card h5,
+.hx-card p {
+    overflow-wrap: anywhere;
+}
+
+/* ---------- Ten Ways / interest cards ---------- */
+
+.interest-card {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.interest-card .interest-icon {
+    width: 54px;
+    min-width: 54px;
+    max-width: 54px;
+
+    height: 54px;
+    min-height: 54px;
+    max-height: 54px;
+
+    flex: 0 0 54px;
+
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-left: auto;
+    margin-right: auto;
+
+    border-radius: 50%;
+
+    overflow: hidden;
+    line-height: 1;
+}
+
+.interest-card .interest-icon i,
+.interest-card .interest-icon svg {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    line-height: 1;
+    flex: 0 0 auto;
+}
+
+.interest-card h3,
+.interest-card h4,
+.interest-card h5,
+.interest-card p {
+    overflow-wrap: anywhere;
+}
+
+
+/* ---------- Choice tiles ---------- */
+
+.choice-tile {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.choice-tile i {
+    display: block;
+    width: 100%;
+    line-height: 1;
+}
+
+
+/* ---------- Forms ---------- */
+
+.form-control,
+.form-select,
+.input-group {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.input-group>* {
+    min-width: 0;
+}
+
+
+/* ---------- Maps ---------- */
+
+#map,
+#detailMap,
+#walkMap {
+    width: 100%;
+    max-width: 100%;
+}
+
+.leaflet-container {
+    max-width: 100%;
+}
+
+
+/* ---------- Itinerary ---------- */
+
+.itinerary-item {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.itinerary-item>* {
+    min-width: 0;
+}
+
+
+/* ---------- Toast ---------- */
+
+.hx-toast-container {
+    max-width: calc(100vw - 44px);
+}
+
+.hx-toast-container .toast {
+    max-width: 100%;
+}
+
+
+/* ---------------------------
+   PHONES
+   --------------------------- */
+
+@media (max-width: 767.98px) {
+
+    .container {
+        width: 100%;
+    }
+
+
+    /* Navbar */
+
+    .hx-navbar {
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .hx-navbar .navbar-collapse {
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .hx-navbar .navbar-nav {
+        width: 100%;
+    }
+
+
+    /* Hero */
+
+    .hero {
+        min-height: 92vh;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .hero-content {
+        width: 100%;
+        max-width: 100%;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    .hero h1 {
+        font-size: clamp(2.1rem, 10vw, 3rem);
+        line-height: 1.08;
+    }
+
+    .hero .hero-sub {
+        max-width: 100%;
+        font-size: 1rem;
+    }
+
+    .hero-search {
+        max-width: 100%;
+    }
+
+
+    /* Sections */
+
+    .section {
+        padding-top: 3.25rem;
+        padding-bottom: 3.25rem;
+    }
+
+
+    /* Cards */
+
+    .hx-card {
+        width: 100%;
+    }
+
+    .hx-card .card-body-custom {
+        padding: 1rem;
+    }
+
+
+    /* Ten Ways cards */
+
+    .interest-card {
+        width: 100%;
+        min-height: 100%;
+        padding: 1.2rem 0.9rem;
+    }
+
+    .interest-card .interest-icon {
+        width: 54px !important;
+        min-width: 54px !important;
+        max-width: 54px !important;
+
+        height: 54px !important;
+        min-height: 54px !important;
+        max-height: 54px !important;
+
+        flex: 0 0 54px !important;
+
+        margin-left: auto !important;
+        margin-right: auto !important;
+
+        border-radius: 50% !important;
+    }
+
+
+    /* Detail page */
+
+    #detailMap {
+        width: 100%;
+        max-width: 100%;
+    }
+
+
+    /* Sticky desktop sidebar becomes normal flow */
+
+    [style*="position:sticky"] {
+        position: static !important;
+        top: auto !important;
+    }
+
+
+    /* Detail gallery */
+
+    #galleryRow {
+        max-width: 100%;
+    }
+
+
+    /* Reviews */
+
+    #reviewSort {
+        max-width: 100%;
+    }
+
+
+    /* Toast */
+
+    .hx-toast-container {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        max-width: none;
+    }
+
+    .hx-toast-container .toast {
+        width: 100%;
+    }
+}
+
+
+/* ---------------------------
+   VERY SMALL PHONES
+   --------------------------- */
+
+@media (max-width: 575.98px) {
+
+    .hero h1 {
+        font-size: clamp(1.95rem, 10vw, 2.5rem);
+    }
+
+    .hero-search {
+        max-width: 100%;
+    }
+
+    .hero-search input {
+        min-width: 0;
+    }
+
+    .hx-card .card-body-custom {
+        padding: 0.9rem;
+    }
+
+    .interest-card {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .interest-card .interest-icon {
+        width: 54px !important;
+        min-width: 54px !important;
+        max-width: 54px !important;
+
+        height: 54px !important;
+        min-height: 54px !important;
+        max-height: 54px !important;
+
+        flex-basis: 54px !important;
+    }
+
+    .rating-pill {
+        max-width: 100%;
+    }
+}
+
+
+/* ---------------------------
+   TABLETS
+   --------------------------- */
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+
+    .hero {
+        min-height: 80vh;
+    }
+
+    .interest-card {
+        min-width: 0;
+    }
+
+    .interest-card .interest-icon {
+        width: 54px;
+        min-width: 54px;
+        max-width: 54px;
+
+        height: 54px;
+        min-height: 54px;
+        max-height: 54px;
+
+        flex: 0 0 54px;
+    }
+
+    [style*="position:sticky"] {
+        position: static !important;
+        top: auto !important;
+    }
+}
+
+
+/* ---------------------------
+   TOUCH DEVICES
+   --------------------------- */
+
+@media (hover: none) and (pointer: coarse) {
+
+    .hx-card:hover,
+    .interest-card:hover {
+        transform: none;
+    }
+
+    .bookmark-btn {
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    .nav-icon-btn {
+        min-width: 40px;
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+
+/* ---------------------------
+   LANDSCAPE PHONES
+   --------------------------- */
+
+@media (max-width: 767.98px) and (orientation: landscape) {
+
+    .hero {
+        min-height: 100vh;
+    }
+}
+
+
+/* ---------------------------
+   FINAL SAFETY
+   --------------------------- */
+
+@media (max-width: 767.98px) {
+
+    .row>*,
+    .d-flex>* {
+        min-width: 0;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p {
+        max-width: 100%;
+    }
+}

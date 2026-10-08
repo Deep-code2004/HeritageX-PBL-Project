@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Places | HeritageX</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/style.css">
+</head>
+
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <nav class="navbar navbar-expand-lg hx-navbar sticky-top" aria-label="Main navigation">
+        <div class="container">
+            <a class="navbar-brand" href="../index.html"><span class="brand-mark"><i
+                        class="bi bi-bank2"></i></span>HeritageX</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
+                aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="navMain">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item"><a class="nav-link" href="../index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Pages/explore.html">Explore</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Pages/recommendations.html">Smart
+                            Recommendations</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Pages/map.html">Map</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Pages/itinerary.html">Plan Trip</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Pages/culture.html">Culture</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Pages/heritage-walks.html">Heritage Walks</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Pages/about.html">About Ahmedabad</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-1 mt-3 mt-lg-0">
+                    <a href="../Pages/saved.html" class="nav-icon-btn" aria-label="Saved places"><i
+                            class="bi bi-bookmark-heart-fill" style="color:var(--terracotta);"></i></a>
+                    <div class="dropdown">
+                        <button class="nav-icon-btn btn btn-link dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown" aria-label="Profile menu"><i
+                                class="bi bi-person-circle"></i></button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <h6 class="dropdown-header">Demo Visitor</h6>
+                            </li>
+                            <li><a class="dropdown-item" href="../Pages/saved.html"><i
+                                        class="bi bi-bookmark-heart me-2"></i>Saved places</a></li>
+                            <li><a class="dropdown-item" href="../Pages/itinerary.html"><i class="bi bi-map me-2"></i>My
+                                    itinerary</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main id="main">
+        <section class="section-tight bg-ivory-deep">
+            <div class="container">
+                <p class="eyebrow">Stored on this device</p>
+                <h1 class="section-title mb-2">Saved places</h1>
+                <p class="section-lede">Everything you've bookmarked while exploring. Add any of these straight to your
+                    trip.</p>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container">
+                <div class="row g-4" id="savedGrid"></div>
+                <div id="savedEmpty" class="empty-state d-none">
+                    <i class="bi bi-bookmark-heart"></i>
+                    <h2 class="h5 mt-3">No saved places yet</h2>
+                    <p>Tap the bookmark icon on any heritage card to save it here.</p>
+                    <a href="../Pages/explore.html" class="btn btn-maroon">Browse heritage sites</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="hx-footer py-5" id="siteFooter"></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/data.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/footer.js"></script>
+    <script>
+        function renderSaved() {
+            const ids = getBookmarks();
+            const sites = getSitesByIds(ids);
+            const grid = document.getElementById("savedGrid");
+            const empty = document.getElementById("savedEmpty");
+            if (!sites.length) {
+                grid.innerHTML = "";
+                empty.classList.remove("d-none");
+                return;
+            }
+            empty.classList.add("d-none");
+            grid.innerHTML = sites.map((s) => `
+    <div class="col-sm-6 col-lg-4">
+      ${siteCardHTML(s)}
+      <button class="btn btn-outline-maroon btn-sm w-100 mt-2 add-trip-from-saved" data-id="${s.id}"><i class="bi bi-plus-circle me-1"></i> Add to Trip</button>
+    </div>`).join("");
+            grid.querySelectorAll(".add-trip-from-saved").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const id = Number(btn.dataset.id);
+                    const itinerary = lsGet(LS_KEYS.itinerary, []);
+                    if (!itinerary.find((i) => i.siteId === id)) itinerary.push({ siteId: id, time: "" });
+                    lsSet(LS_KEYS.itinerary, itinerary);
+                    showToast("Added to your trip", "bi-map");
+                });
+            });
+        }
+        document.addEventListener("DOMContentLoaded", renderSaved);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,7 @@
+# This file only asks well-behaved search engine crawlers not to index
+# the /admin/ folder. It is NOT an access-control mechanism — anyone who
+# knows or guesses the URL can still open these pages; robots.txt cannot
+# stop that. Real protection must come from server-side authentication.
+
+User-agent: *
+Disallow: /admin/

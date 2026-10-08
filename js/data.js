@@ -1,0 +1,826 @@
+/* ---------------------------
+   HeritageX — data.js
+   Static mock dataset standing in for a backend API. Every record below
+   is used as-is by every page (explore, detail, map, recommendations,
+   itinerary, admin). Replace this file with real API calls in a future
+   version — the rest of the app only talks to the functions at the
+   bottom, not to the arrays directly.
+   --------------------------- */
+
+const HERITAGE_SITES = [
+    {
+        id: 1,
+        name: "Bhadra Fort",
+        slug: "bhadra-fort",
+        category: "Historical Monuments",
+        tags: ["Sultanate Era", "Fort", "1411 CE"],
+        interests: ["history", "architecture", "photography"],
+        shortDescription: "The citadel Sultan Ahmad Shah raised in 1411 CE, marking the founding point of the walled city.",
+        history: "Bhadra Fort was the first structure built when Sultan Ahmad Shah founded Ahmedabad in 1411 CE on the eastern bank of the Sabarmati. It served as the royal citadel of the Gujarat Sultanate, housing the palace, treasury and administrative offices. The fort takes its name from the goddess Bhadra Kali, whose temple stands within its precincts. Over six centuries it has passed through Sultanate, Mughal, Maratha and British hands, each leaving administrative or structural marks on the complex.",
+        culturalSignificance: "Bhadra Fort is treated as the symbolic zero point of Ahmedabad — the city's age and its UNESCO inscription are both measured from this ground. Its clock tower and the adjoining Bhadra Kali temple remain an active civic and religious landmark, drawing both worshippers and history visitors daily.",
+        architecture: "Built in rubble masonry with sandstone facing, the fort follows Sultanate military architecture with high battlemented walls, corner bastions and a central darbar hall. Later British-era additions include the clock tower on the eastern gate.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Bhadra%20Fort%20-%20Ahmedabad%20-%20Gujarat.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Bhadra%20Fort%20-%20Ahmedabad%20-%20Gujarat.jpg?width=1200"
+        ],
+        latitude: 23.0225,
+        longitude: 72.5825,
+        rating: 4.4,
+        reviewCount: 812,
+        duration: "45–60 min",
+        timings: "Grounds: 6:00 AM – 8:00 PM daily. Bhadra Kali temple: 6:00 AM – 9:00 PM.",
+        entryFee: "Free entry to the grounds; temple darshan free",
+        nearbyPlaces: [2, 3, 6],
+        responsibleGuidelines: [
+            "Remove footwear before entering the Bhadra Kali temple precinct.",
+            "Do not climb or lean on the old ramparts — the sandstone is soft and erodes.",
+            "Photography of worshippers should only be done with consent."
+        ],
+        verified: true,
+        source: "ASI heritage listing & Ahmedabad Municipal Corporation heritage cell, cross-checked Aug 2026"
+    },
+
+    {
+        id: 2,
+        name: "Teen Darwaza",
+        slug: "teen-darwaza",
+        category: "Sultanate Heritage",
+        tags: ["Triple Gateway", "1415 CE", "UNESCO Core"],
+        interests: ["history", "architecture", "photography"],
+        shortDescription: "A triple-arched royal gateway built to link Bhadra Fort with the Maidan Shahi, still Ahmedabad's busiest street market frame.",
+        history: "Constructed around 1415 CE, Teen Darwaza formed the ceremonial approach from Bhadra Fort to the royal square (Maidan Shahi) where sultans held public processions. Royal announcements, victories and edicts were traditionally proclaimed from this gate. It has stood at the heart of the city's commerce for over 600 years without losing its role.",
+        culturalSignificance: "The three arches are one of the most photographed silhouettes of old Ahmedabad and appear on the city's heritage insignia. Today the gate frames a dense cloth and spice market, making it a rare monument still doing the civic job it was built for.",
+        architecture: "Three tall sandstone arches in a row, the central one taller, decorated with restrained Sultanate-era stonework and small jharokha balconies once used for royal viewing.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Teen-Darwaza.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Teen-Darwaza.jpg?width=1200"
+        ],
+        latitude: 23.0233,
+        longitude: 72.5843,
+        rating: 4.3,
+        reviewCount: 540,
+        duration: "20–30 min",
+        timings: "Open air — accessible 24 hours; markets active 10:00 AM – 8:30 PM",
+        entryFee: "Free",
+        nearbyPlaces: [1, 6, 3],
+        responsibleGuidelines: [
+            "Mind two-wheeler and cart traffic — this is a working market street.",
+            "Avoid touching or scratching the sandstone surface for photos.",
+            "Bargain respectfully with market vendors; it's part of local livelihoods."
+        ],
+        verified: true,
+        source: "ASI Centrally Protected Monument record, verified Aug 2026"
+    },
+
+    {
+        id: 3,
+        name: "Jama Masjid",
+        slug: "jama-masjid",
+        category: "Religious Heritage",
+        tags: ["Sultanate Mosque", "1424 CE", "Active Worship"],
+        interests: ["history", "architecture", "religion", "photography"],
+        shortDescription: "Sultan Ahmad Shah's grand congregational mosque, its 260 pillars blending Islamic and Hindu-Jain temple craftsmanship.",
+        history: "Completed in 1424 CE under Sultan Ahmad Shah, Jama Masjid was built as Ahmedabad's principal Friday mosque. Local craftsmen trained in temple-building traditions worked alongside Sultanate masons, producing a hybrid Indo-Islamic style unique to Gujarat that later influenced mosque architecture across the region.",
+        culturalSignificance: "It remains the city's main congregational mosque, filling with worshippers every Friday and during Eid. The building is often cited as the finest surviving example of Ahmedabad's Sultanate-era 'Indo-Saracenic' architectural synthesis.",
+        architecture: "A vast sandstone courtyard mosque with 260 columns supporting 15 domes at varying heights, carved in motifs that echo contemporary Jain and Hindu temple work — lotus medallions, bell-and-chain patterns and slender colonnades.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Jama%20Masjid-Ahmedabad.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Jama%20Masjid-Ahmedabad.jpg?width=1200"
+        ],
+        latitude: 23.0247,
+        longitude: 72.5854,
+        rating: 4.6,
+        reviewCount: 1210,
+        duration: "30–45 min",
+        timings: "Open to visitors between prayers, roughly 8:00 AM – 6:30 PM (closed to non-worshippers during namaz)",
+        entryFee: "Free",
+        nearbyPlaces: [2, 4, 5],
+        responsibleGuidelines: [
+            "Dress modestly — shoulders and knees covered for all visitors.",
+            "Remove footwear before stepping onto the courtyard floor.",
+            "Do not enter during active prayer times unless you are worshipping.",
+            "Ask before photographing people at prayer."
+        ],
+        verified: true,
+        source: "ASI Centrally Protected Monument record, verified Aug 2026"
+    },
+
+    {
+        id: 4,
+        name: "Sidi Saiyyed Mosque",
+        slug: "sidi-saiyyed-mosque",
+        category: "Sultanate Heritage",
+        tags: ["Jali Lattice", "1573 CE", "Symbol of the City"],
+        interests: ["architecture", "art", "photography", "religion"],
+        shortDescription: "A small mosque famous worldwide for its intricately carved stone jali of the intertwined tree of life.",
+        history: "Built in 1573 CE by Sidi Saiyyed, an Abyssinian noble in the service of the last Gujarat Sultan, this mosque was among the final structures raised before the Mughal conquest of Gujarat. Despite its modest size, its ten carved stone windows made it instantly celebrated.",
+        culturalSignificance: "The semi-circular jali depicting an intertwined tree is Ahmedabad's unofficial emblem — it appears in the logo of IIM Ahmedabad and countless institutional crests. It represents the peak of Gujarati stone-lattice craftsmanship.",
+        architecture: "A shallow prayer hall fronted by ten intricately carved jali screens in yellow sandstone, cut so fine that light filters through in lace-like patterns; no other element of the modest building competes with the screens.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Sidi%20Saiyyed%20Mosque%2C%20Ahmedabad.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Sidi%20Saiyyed%20Mosque%2C%20Ahmedabad.jpg?width=1200"
+        ],
+        latitude: 23.0246,
+        longitude: 72.5808,
+        rating: 4.7,
+        reviewCount: 1875,
+        duration: "15–25 min",
+        timings: "7:00 AM – 6:30 PM daily",
+        entryFee: "Free",
+        nearbyPlaces: [3, 1, 5],
+        responsibleGuidelines: [
+            "Do not touch the jali screens — natural oils accelerate stone erosion.",
+            "Keep voices low; it is a functioning place of worship.",
+            "Flash photography is discouraged near the screens."
+        ],
+        verified: true,
+        source: "ASI Centrally Protected Monument record, verified Aug 2026"
+    },
+
+    {
+        id: 5,
+        name: "Rani no Hajiro",
+        slug: "rani-no-hajiro",
+        category: "Sultanate Heritage",
+        tags: ["Royal Tombs", "Queens' Enclosure"],
+        interests: ["history", "architecture", "culture"],
+        shortDescription: "A quiet walled enclosure holding the tombs of Sultanate-era queens, tucked behind Manek Chowk's bustle.",
+        history: "Rani no Hajiro ('the queens' enclosure') was built to house the graves of the wives and female relatives of Sultan Ahmad Shah and his successors, adjoining the king's own mausoleum. It has remained a place of quiet reverence even as the market around it grew louder.",
+        culturalSignificance: "It is one of the few surviving spaces in the old city dedicated specifically to Sultanate-era women's memory, and a calm counterpoint to the commercial energy of neighbouring Manek Chowk.",
+        architecture: "A rectangular walled courtyard with rows of carved cenotaphs under a covered colonnade, decorated with restrained geometric and floral stone inlay.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Rani%20No%20Hajiro-Ahmedabad-Gujrat-DSC%200012.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Rani%20No%20Hajiro-Ahmedabad-Gujrat-DSC%200012.jpg?width=1200"
+        ],
+        latitude: 23.0255,
+        longitude: 72.5862,
+        rating: 4.1,
+        reviewCount: 236,
+        duration: "10–15 min",
+        timings: "8:00 AM – 6:00 PM daily",
+        entryFee: "Free",
+        nearbyPlaces: [3, 6, 4],
+        responsibleGuidelines: [
+            "Keep to the marked walkways between the cenotaphs.",
+            "Speak softly — this is a memorial space.",
+            "No food or drink inside the enclosure."
+        ],
+        verified: true,
+        source: "AMC heritage cell listing, verified Aug 2026"
+    },
+
+    {
+        id: 6,
+        name: "Manek Chowk",
+        slug: "manek-chowk",
+        category: "Markets",
+        tags: ["Living Market", "Street Food", "Jewellery Bazaar"],
+        interests: ["food", "shopping", "culture", "photography"],
+        shortDescription: "A single square that runs as a jewellery and cloth market by day and one of India's most famous street-food arenas by night.",
+        history: "Named after the Manek Naths, this square has been Ahmedabad's commercial heart since the Sultanate period, sitting between Bhadra Fort and Jama Masjid. Its identity has shifted with the centuries — grain market, then cloth and jewellery bazaar, and after dark, since the 1980s, a street-food destination known across Gujarat.",
+        culturalSignificance: "Manek Chowk is the clearest example of Ahmedabad's 'living heritage' — the same square used continuously for six centuries, its function changing with the city rather than being frozen as a monument.",
+        architecture: "An open square ringed by narrow-fronted Sultanate and colonial-era shopfronts; no single structure dominates, the built heritage is the streetscape itself.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Manek%20Chowk%20%28Ahmedabad%29%2001.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Manek%20Chowk%20%28Ahmedabad%29%2001.jpg?width=1200"
+        ],
+        latitude: 23.0243,
+        longitude: 72.5873,
+        rating: 4.5,
+        reviewCount: 3040,
+        duration: "60–90 min",
+        timings: "Jewellery/cloth market: 11:00 AM – 8:00 PM. Street food: 8:00 PM – 1:00 AM.",
+        entryFee: "Free (food and shopping at market prices)",
+        nearbyPlaces: [2, 5, 3],
+        responsibleGuidelines: [
+            "Carry cash in small denominations for street vendors.",
+            "Avoid single-use plastic — carry a reusable bottle or bag.",
+            "Confirm prices before ordering to support fair local trade."
+        ],
+        verified: true,
+        source: "AMC heritage cell & local tourism office listing, verified Aug 2026"
+    },
+
+    {
+        id: 7,
+        name: "Swaminarayan Temple, Kalupur",
+        slug: "swaminarayan-temple-kalupur",
+        category: "Religious Heritage",
+        tags: ["1822 CE", "Wooden Craftsmanship", "Active Worship"],
+        interests: ["religion", "architecture", "culture", "photography"],
+        shortDescription: "The first Swaminarayan temple ever built, consecrated in 1822 with elaborately carved teakwood halls.",
+        history: "Consecrated in 1822 by Bhagwan Swaminarayan himself, this was the founding temple of the Swaminarayan sampraday. Built with royal permission from the British administration of the time, it set the template for Swaminarayan temples worldwide.",
+        culturalSignificance: "It remains an active centre of worship and community life for the Swaminarayan tradition, and a major pilgrimage stop within the walled city.",
+        architecture: "Traditional Gujarati temple architecture in teak and sandstone, with finely carved wooden ceilings, brackets and doorways rather than the marble seen in newer Swaminarayan temples.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Ahmedabad%20Kalupur%20Swaminarayan%20Temple.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Ahmedabad%20Kalupur%20Swaminarayan%20Temple.jpg?width=1200"
+        ],
+        latitude: 23.0294,
+        longitude: 72.5906,
+        rating: 4.6,
+        reviewCount: 980,
+        duration: "30–45 min",
+        timings: "6:00 AM – 12:00 PM, 4:00 PM – 9:00 PM daily",
+        entryFee: "Free",
+        nearbyPlaces: [8, 6],
+        responsibleGuidelines: [
+            "Phones and cameras are restricted in the inner sanctum — check signage.",
+            "Dress modestly and remove footwear at the designated stands.",
+            "Follow queue lines during aarti; it gets crowded."
+        ],
+        verified: true,
+        source: "Temple trust public information & AMC heritage listing, verified Aug 2026"
+    },
+
+    {
+        id: 8,
+        name: "Hutheesing Jain Temple",
+        slug: "hutheesing-jain-temple",
+        category: "Religious Heritage",
+        tags: ["1848 CE", "Jain Marble Work", "Dharmanatha"],
+        interests: ["religion", "architecture", "art", "photography"],
+        shortDescription: "An 1848 marble Jain temple dedicated to Dharmanatha, funded by the Hutheesing merchant family.",
+        history: "Built in 1848 by the wealthy Hutheesing family of textile merchants, this temple is dedicated to the fifteenth Jain Tirthankara, Dharmanatha. It stands just outside the old city's Delhi Gate and reflects the prosperity of Ahmedabad's 19th-century merchant class.",
+        culturalSignificance: "It is one of the finest examples of 19th-century Jain temple architecture in Gujarat and remains an active pilgrimage and worship site for the local Jain community.",
+        architecture: "Intricately carved white marble in the traditional Jain style, with a columned courtyard of subsidiary shrines surrounding the main sanctum and a detached triple-storeyed manastambha (pillar of honour).",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Hutheesing%20Jain%20Temple.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Hutheesing%20Jain%20Temple.jpg?width=1200"
+        ],
+        latitude: 23.0367,
+        longitude: 72.5847,
+        rating: 4.6,
+        reviewCount: 705,
+        duration: "30–40 min",
+        timings: "6:00 AM – 7:00 PM daily",
+        entryFee: "Free (leather articles must be left outside)",
+        nearbyPlaces: [7],
+        responsibleGuidelines: [
+            "No leather items (belts, wallets, bags) permitted inside — lockers are available.",
+            "Maintain silence in the sanctum areas.",
+            "Photography of the main idol may be restricted — check with temple staff."
+        ],
+        verified: true,
+        source: "Temple trust public information, verified Aug 2026"
+    },
+
+    {
+        id: 9,
+        name: "Jhulta Minara (Sidi Bashir Mosque)",
+        slug: "jhulta-minara",
+        category: "Sultanate Heritage",
+        tags: ["Shaking Minarets", "Engineering Marvel"],
+        interests: ["architecture", "history", "photography"],
+        shortDescription: "The surviving pair of 'shaking minarets' — a Sultanate engineering trick that made one tower tremble when the other was shaken.",
+        history: "Built as part of the Sidi Bashir Mosque in the 15th century, these minarets were engineered so that shaking one tower caused gentle vibration in the other while the connecting structure stayed still — a device believed to help the towers withstand earthquakes. One minaret was damaged during colonial-era inspection attempts and later restrictions were placed on climbing them.",
+        culturalSignificance: "They are a widely cited example of Sultanate-era structural ingenuity and remain a well-known curiosity stop near the Ahmedabad railway station.",
+        architecture: "Slender carved sandstone minarets flanking a small mosque, connected internally in a way that allowed sympathetic vibration — a rare structural device in historic Indian architecture.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Jhulta%20Minara%2C%20Gomtipur%20Ahmedabad%2C%20India.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Jhulta%20Minara%2C%20Gomtipur%20Ahmedabad%2C%20India.jpg?width=1200"
+        ],
+        latitude: 23.0198,
+        longitude: 72.5985,
+        rating: 4.0,
+        reviewCount: 410,
+        duration: "15–20 min",
+        timings: "8:00 AM – 6:00 PM (viewing from exterior; climbing not permitted)",
+        entryFee: "Free",
+        nearbyPlaces: [10],
+        responsibleGuidelines: [
+            "Climbing the minarets is prohibited for structural safety — view from ground level.",
+            "Watch for railway-station traffic in the surrounding lanes.",
+            "Do not deface or scratch the stonework."
+        ],
+        verified: true,
+        source: "ASI Centrally Protected Monument record, verified Aug 2026"
+    },
+
+    {
+        id: 10,
+        name: "Rani Sipri Mosque & Tomb",
+        slug: "rani-sipri-mosque",
+        category: "Sultanate Heritage",
+        tags: ["1514 CE", "Masjid-e-Nagina"],
+        interests: ["architecture", "history", "photography"],
+        shortDescription: "Nicknamed 'Masjid-e-Nagina' (jewel mosque) for its delicate scale, built in 1514 by Queen Sipri.",
+        history: "Commissioned in 1514 CE by Rani Sipri, wife of Sultan Mahmud Begada, this mosque-and-tomb complex is celebrated for its refined, almost feminine architectural delicacy compared to the city's larger royal mosques.",
+        culturalSignificance: "It is frequently cited by architectural historians as a high point of grace in Gujarat Sultanate design, contrasting with the monumental scale of Jama Masjid.",
+        architecture: "A small but exquisitely proportioned mosque in sandstone with slender minarets and finely carved brackets; the adjoining tomb uses delicate jali screens.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Rani%20Sipri%20Mosque%20Ahmedabad.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Rani%20Sipri%20Mosque%20Ahmedabad.jpg?width=1200"
+        ],
+        latitude: 23.0198,
+        longitude: 72.5896,
+        rating: 4.3,
+        reviewCount: 298,
+        duration: "15–20 min",
+        timings: "7:00 AM – 6:00 PM daily",
+        entryFee: "Free",
+        nearbyPlaces: [9, 6],
+        responsibleGuidelines: [
+            "Dress modestly; remove footwear before entering the mosque floor.",
+            "Avoid loud conversation near the tomb chamber.",
+            "Do not touch the carved jali screens."
+        ],
+        verified: true,
+        source: "ASI Centrally Protected Monument record, verified Aug 2026"
+    },
+
+    {
+        id: 11,
+        name: "Bai Harir ni Vav (Dada Harir Stepwell)",
+        slug: "bai-harir-ni-vav",
+        category: "Historical Monuments",
+        tags: ["1499 CE", "Stepwell", "Water Architecture"],
+        interests: ["architecture", "history", "photography"],
+        shortDescription: "A five-storey stepwell built in 1499 by royal harem superintendent Bai Harir, descending through octagonal landings to the water table.",
+        history: "Built in 1499 CE under the patronage of Bai Harir Sultani, superintendent of the royal harem, this stepwell was constructed both as a charitable water source and as a work of devotion. It combines a stepwell (vav) with an adjoining mosque and tomb.",
+        culturalSignificance: "It is one of Gujarat's finest surviving examples of stepwell architecture — a building type that answered the region's dry climate with elegant, cool subterranean public space.",
+        architecture: "An octagonal shaft descends five storeys through carved sandstone landings and colonnades to reach the water level, with niches and brackets carved in Sultanate floral motifs.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Dada%20Harir%20ki%20Vav.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Dada%20Harir%20ki%20Vav.jpg?width=1200"
+        ],
+        latitude: 23.0454,
+        longitude: 72.6114,
+        rating: 4.5,
+        reviewCount: 366,
+        duration: "25–35 min",
+        timings: "8:00 AM – 6:00 PM daily",
+        entryFee: "Free",
+        nearbyPlaces: [],
+        responsibleGuidelines: [
+            "Steps can be uneven and slippery — wear flat, closed footwear.",
+            "Do not enter closed-off lower landings during monsoon flooding.",
+            "Carry your litter back out; there are no bins inside the well."
+        ],
+        verified: true,
+        source: "ASI Centrally Protected Monument record, verified Aug 2026"
+    },
+
+    {
+        id: 12,
+        name: "Ahmedabad Pols",
+        slug: "ahmedabad-pols",
+        category: "Pols & Havelis",
+        tags: ["Living Heritage", "Wooden Havelis", "Community Housing"],
+        interests: ["culture", "architecture", "photography", "history"],
+        shortDescription: "Centuries-old gated residential clusters of carved wooden havelis, still lived in today by the same communities that built them.",
+        history: "Pols emerged from the 15th century onward as self-contained residential clusters, each usually built around a single caste, trade or community, with narrow lanes, common squares and gated entrances that could be closed for security. Many still carry the name of the founding family or trade guild.",
+        culturalSignificance: "The pols are the reason UNESCO inscribed Ahmedabad as a living heritage city rather than a museum city — families still live, cook, worship and trade inside these same wooden havelis, making the heritage continuously inhabited rather than preserved behind glass.",
+        architecture: "Tightly packed multi-storey wooden havelis with carved brackets, balconies (otlas) and jharokha windows, arranged along narrow shaded lanes with shared chabutras (bird-feeding towers) and community squares.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Ahmedabad%20ni%20pol.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Ahmedabad%20ni%20pol.jpg?width=1200"
+        ],
+        latitude: 23.0255,
+        longitude: 72.5895,
+        rating: 4.7,
+        reviewCount: 622,
+        duration: "60–120 min (guided walk recommended)",
+        timings: "Best visited 8:00 AM – 11:00 AM or 4:00 PM – 6:30 PM",
+        entryFee: "Free to walk; guided heritage walks are separately priced",
+        nearbyPlaces: [6, 14],
+        responsibleGuidelines: [
+            "These are private homes — do not enter courtyards uninvited.",
+            "Ask before photographing residents or their doorways.",
+            "Keep noise low; the pols are quiet residential lanes."
+        ],
+        verified: true,
+        source: "UNESCO World Heritage City inscription documentation, verified Aug 2026"
+    },
+
+    {
+        id: 13,
+        name: "Kavi Dalpatram Chowk",
+        slug: "kavi-dalpatram-chowk",
+        category: "Living Heritage",
+        tags: ["Poet's Square", "Community Life"],
+        interests: ["culture", "history", "photography"],
+        shortDescription: "A pol square named for Gujarati poet Dalpatram, still used for community gatherings and festivals today.",
+        history: "Named after the celebrated 19th-century Gujarati poet Dalpatram, who lived nearby, this square has functioned as a neighbourhood gathering point for generations, hosting festival rituals, kite-flying viewpoints and everyday community life.",
+        culturalSignificance: "It illustrates how literary and civic memory sit side by side with everyday life in the pols — a poet's legacy embedded into ordinary neighbourhood routine rather than roped off as a memorial.",
+        architecture: "An open pol square framed by traditional wooden havelis with carved facades, anchored by a small memorial bust of the poet.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Poet%20Dalpatram%20Chowk.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Poet%20Dalpatram%20Chowk.jpg?width=1200"
+        ],
+        latitude: 23.026,
+        longitude: 72.5885,
+        rating: 4.2,
+        reviewCount: 158,
+        duration: "10–15 min",
+        timings: "Open air — accessible during daylight hours",
+        entryFee: "Free",
+        nearbyPlaces: [12, 6],
+        responsibleGuidelines: [
+            "Respect that this is a lived-in residential square.",
+            "Avoid loud group activity that disturbs residents.",
+            "Support any local stalls present rather than bringing outside vendors."
+        ],
+        verified: true,
+        source: "AMC heritage cell listing, verified Aug 2026"
+    },
+
+    {
+        id: 14,
+        name: "Calico Dome (Sarabhai Foundation)",
+        slug: "calico-dome",
+        category: "Museums",
+        tags: ["Textile Museum", "Modernist Architecture"],
+        interests: ["art", "culture", "photography", "history"],
+        shortDescription: "Home to the Calico Museum of Textiles' modern galleries — one of the world's finest collections of Indian textile art.",
+        history: "Established by the Sarabhai family in 1949 and later expanded with modernist gallery buildings, the Calico Museum of Textiles grew into one of the most respected textile collections globally, spanning Mughal court textiles to Gujarati embroidery traditions.",
+        culturalSignificance: "It anchors Ahmedabad's identity as a historic centre of textile craft and trade, connecting the city's mercantile cloth-market history (visible at Manek Chowk) to a scholarly, preserved collection.",
+        architecture: "Understated modernist museum architecture designed to protect and display textiles under controlled light, set within the Sarabhai family's garden estate.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Calico%20Museum%20of%20Textiles%2C%20Ahmedabad%2C%201952.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Calico%20Museum%20of%20Textiles%2C%20Ahmedabad%2C%201952.jpg?width=1200"
+        ],
+        latitude: 23.0505,
+        longitude: 72.5735,
+        rating: 4.6,
+        reviewCount: 512,
+        duration: "90–120 min",
+        timings: "10:15 AM – 12:30 PM & 2:45 PM – 5:00 PM, closed Wednesdays. Advance booking recommended.",
+        entryFee: "Free, by prior appointment/booking",
+        nearbyPlaces: [],
+        responsibleGuidelines: [
+            "Photography of textiles is generally restricted indoors — check at entry.",
+            "Booking ahead is required; walk-ins may be turned away.",
+            "Handle nothing on display — textiles are extremely fragile."
+        ],
+        verified: true,
+        source: "Sarabhai Foundation public visitor information, verified Aug 2026"
+    },
+
+    {
+        id: 15,
+        name: "Shantinathji ni Pol",
+        slug: "shantinathji-ni-pol",
+        category: "Pols & Havelis",
+        tags: ["Jain Community Pol", "Wooden Haveli"],
+        interests: ["culture", "architecture", "religion"],
+        shortDescription: "A Jain community pol centred on a domestic Shantinath shrine, its havelis among the best preserved in the old city.",
+        history: "Built up around a household shrine to Tirthankara Shantinath, this pol grew as a close-knit Jain merchant community settlement, with several havelis retaining original carved woodwork largely intact.",
+        culturalSignificance: "It is frequently included on heritage-walk routes as an example of a well-preserved single-community pol, showing how faith, trade and domestic architecture intertwined in old Ahmedabad.",
+        architecture: "Rows of wooden havelis with carved door frames, jharokhas and a small shrine space integrated into the residential fabric rather than standing as a separate temple building.",
+        image: "https://www.visitwander.com/wp-content/uploads/2024/12/Shantinath-Jain-Derasar.jpg",
+        gallery: [
+            "https://www.visitwander.com/wp-content/uploads/2024/12/Shantinath-Jain-Derasar.jpg"
+        ],
+        latitude: 23.026,
+        longitude: 72.59,
+        rating: 4.3,
+        reviewCount: 121,
+        duration: "15–20 min",
+        timings: "Best visited during daylight, 8:00 AM – 6:00 PM",
+        entryFee: "Free",
+        nearbyPlaces: [12, 13],
+        responsibleGuidelines: [
+            "Private residence lanes — stay on the public walkway.",
+            "Ask permission before photographing inside any haveli entrance.",
+            "Dress modestly if visiting the household shrine."
+        ],
+        verified: true,
+        source: "AMC heritage cell listing, verified Aug 2026"
+    },
+
+    {
+        id: 16,
+        name: "Sabarmati Ashram",
+        slug: "sabarmati-ashram",
+        category: "Historical Monuments",
+        tags: ["Gandhi's Home", "1917–1930", "Dandi March Origin"],
+        interests: ["history", "culture", "photography"],
+        shortDescription: "Mahatma Gandhi's riverside residence from 1917 to 1930, and the starting point of the 1930 Dandi Salt March.",
+        history: "Gandhi established this ashram on the banks of the Sabarmati in 1917 and lived here until 1930, when he set out on the historic Dandi March to protest the salt tax — a turning point of the Indian independence movement. The original cottages, including Gandhi's own residence Hriday Kunj, are preserved as-is.",
+        culturalSignificance: "It is one of India's most visited sites of the freedom movement, drawing visitors from across the world to see the simple living quarters from which a global campaign of nonviolent resistance was organised.",
+        architecture: "Simple, low single-storey cottages in local brick and tile, deliberately unornamented, arranged around open courtyards along the riverfront.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Sabarmati%20Ashram%20-%20Ahmedabad%20-%20Gujarat%20-%20DSC001.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Sabarmati%20Ashram%20-%20Ahmedabad%20-%20Gujarat%20-%20DSC001.jpg?width=1200"
+        ],
+        latitude: 23.061,
+        longitude: 72.5806,
+        rating: 4.8,
+        reviewCount: 4210,
+        duration: "60–90 min",
+        timings: "8:30 AM – 6:30 PM daily",
+        entryFee: "Free",
+        nearbyPlaces: [19],
+        responsibleGuidelines: [
+            "Maintain quiet and reflective conduct — it is treated as a memorial space.",
+            "Do not touch or sit on preserved furniture and personal items.",
+            "Footwear must be removed before entering Hriday Kunj."
+        ],
+        verified: true,
+        source: "Sabarmati Ashram Preservation and Memorial Trust, verified Aug 2026"
+    },
+
+    {
+        id: 17,
+        name: "Sardar Vallabhbhai Patel National Memorial",
+        slug: "sardar-patel-national-memorial",
+        category: "Museums",
+        tags: ["Moti Shahi Mahal", "17th Century Palace", "Museum"],
+        interests: ["history", "architecture", "culture"],
+        shortDescription: "A 17th-century Mughal-era palace, Moti Shahi Mahal, now a museum on the life of Sardar Vallabhbhai Patel.",
+        history: "Originally built as Moti Shahi Mahal during the Mughal period within the Shahibaug royal gardens, the palace was later repurposed as a memorial and museum dedicated to Sardar Vallabhbhai Patel, independent India's first Deputy Prime Minister, who was born near Ahmedabad.",
+        culturalSignificance: "It links Ahmedabad's Mughal-era built heritage directly to modern Indian nation-building history, housed inside a genuinely historic palace rather than a purpose-built museum block.",
+        architecture: "A symmetrical Mughal garden palace in brick and lime plaster, with wide verandas, domed pavilions and formal charbagh-style gardens.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Sardar%20Vallabhbhai%20Patel%20National%20Memorial.jpg?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Sardar%20Vallabhbhai%20Patel%20National%20Memorial.jpg?width=1200"
+        ],
+        latitude: 23.0272,
+        longitude: 72.5875,
+        rating: 4.4,
+        reviewCount: 340,
+        duration: "45–60 min",
+        timings: "10:00 AM – 5:00 PM, closed Mondays",
+        entryFee: "Nominal entry ticket (check current rate on arrival)",
+        nearbyPlaces: [1],
+        responsibleGuidelines: [
+            "No touching of museum artefacts or archival displays.",
+            "Photography may be restricted in certain galleries — check signage.",
+            "Keep to the designated garden pathways."
+        ],
+        verified: true,
+        source: "Sardar Patel National Memorial Trust visitor information, verified Aug 2026"
+    },
+
+    {
+        id: 18,
+        name: "Sanskar Kendra (City Museum)",
+        slug: "sanskar-kendra",
+        category: "Museums",
+        tags: ["Le Corbusier", "City History Museum"],
+        interests: ["art", "culture", "history", "architecture"],
+        shortDescription: "A Le Corbusier-designed museum tracing Ahmedabad's civic and cultural history, built in raw exposed concrete.",
+        history: "Designed by the modernist architect Le Corbusier and completed in the 1950s–70s, Sanskar Kendra was conceived as a city museum documenting Ahmedabad's growth, crafts, and civic life, forming part of Le Corbusier's broader body of work in the city alongside the Mill Owners' Association building and Villa Sarabhai.",
+        culturalSignificance: "It represents the 20th-century layer of Ahmedabad's heritage, showing that the city's architectural story continues well past the Sultanate period into global modernism.",
+        architecture: "Raised on pilotis in Le Corbusier's signature Brutalist style, using exposed concrete (beton brut), ramps and open-plan gallery volumes rather than ornament.",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Sanskar%20Kendra%20Museum.JPG?width=1200",
+        gallery: [
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Sanskar%20Kendra%20Museum.JPG?width=1200"
+        ],
+        latitude: 23.0367,
+        longitude: 72.5789,
+        rating: 4.2,
+        reviewCount: 265,
+        duration: "45–60 min",
+        timings: "10:30 AM – 5:30 PM, closed Mondays",
+        entryFee: "Nominal entry ticket (check current rate on arrival)",
+        nearbyPlaces: [7],
+        responsibleGuidelines: [
+            "This is a protected modernist structure — avoid touching exhibit surfaces.",
+            "Photography for personal use is generally permitted; ask about tripods/commercial shoots.",
+            "Follow staff directions in gallery flow to protect fragile exhibits."
+        ],
+        verified: true,
+        source: "AMC museums division public information, verified Aug 2026"
+    }
+];
+
+
+/* Culture / editorial content used on culture.html */
+const CULTURE_SECTIONS = [
+    {
+        id: "food",
+        title: "Gujarati Food",
+        icon: "bi-egg-fried",
+        summary: "A cuisine built on the region's dry climate and trading history, sweet, savoury and tangy in the same bite.",
+        body: "Ahmedabad's food culture centres on the thali, a rotating spread of dal, kadhi, seasonal vegetable preparations, roti and rice, refreshed continuously through a meal. Street food carries its own identity: khaman, dhokla, fafda-jalebi as a Sunday-morning ritual, and Manek Chowk's night market of pav bhaji, kulfi and pani puri. Jain dietary rules — no root vegetables, no onion or garlic in many kitchens — have shaped a distinct vegetarian tradition found nowhere else in India."
+    },
+
+    {
+        id: "crafts",
+        title: "Traditional Crafts",
+        icon: "bi-scissors",
+        summary: "From Sultanate-era stone jali to modern block printing, Ahmedabad's craft lineage runs unbroken.",
+        body: "The stone-carving tradition that produced Sidi Saiyyed's famous jali continues today in smaller architectural commissions and restoration work across the old city. Nearby, bandhani tie-dye, block printing and zari embroidery workshops — many run by families who have practised the craft for generations — supply both local markets and export houses."
+    },
+
+    {
+        id: "textiles",
+        title: "Textiles",
+        icon: "bi-bezier2",
+        summary: "Ahmedabad earned the nickname 'Manchester of the East' for its textile mills, a legacy now preserved in museums and revived in design studios.",
+        body: "From the 19th-century rise of cotton mills to the scholarly Calico Museum collection, textiles are woven into Ahmedabad's economic and artistic identity. Patola weaving, ajrakh printing and hand-embroidered Kutch work continue to be sold in the old city's cloth markets, sitting alongside contemporary textile design studios."
+    },
+
+    {
+        id: "markets",
+        title: "Markets",
+        icon: "bi-shop",
+        summary: "Manek Chowk, Bhadra's cloth lanes and countless pol-side shopfronts keep old-city commerce genuinely alive.",
+        body: "Unlike heritage precincts frozen for tourism, Ahmedabad's old-city markets are still working commercial streets. Teen Darwaza's cloth and spice trade, Manek Chowk's jewellery bazaar by day, and countless small pol-front shops selling everything from brassware to sweets, form a living economy layered directly onto the historic street plan."
+    },
+
+    {
+        id: "festivals",
+        title: "Festivals",
+        icon: "bi-stars",
+        summary: "Uttarayan's kite-filled skies and Navratri's nine nights of garba define the city's festival calendar.",
+        body: "Uttarayan (mid-January) turns old-city rooftops into a sea of kites, a tradition tied to the pols' architecture of flat, connected terraces. Navratri fills Ahmedabad with nightly garba and dandiya-raas gatherings across the city, while religious calendars — Eid at Jama Masjid, Jain Paryushan, and temple festivals at Swaminarayan Kalupur — layer through the year."
+    },
+
+    {
+        id: "music",
+        title: "Music",
+        icon: "bi-music-note-beamed",
+        summary: "Devotional bhajan and garba traditions carry Gujarati folk music through the pols and temple courtyards.",
+        body: "Traditional Gujarati folk music survives most visibly in devotional settings, bhajan mandalis that gather in pol squares and temple courtyards, and the call-and-response garba songs sung live during Navratri, often accompanied by dhol and manjira rather than recorded tracks."
+    },
+
+    {
+        id: "dance",
+        title: "Dance",
+        icon: "bi-person-arms-up",
+        summary: "Garba and dandiya-raas are community dance forms, not stage performances, everyone on the street is expected to join in.",
+        body: "Garba is danced in concentric circles around a central lamp or deity image, its steps simple enough for every generation to join. Dandiya-raas, danced with short sticks in pairs, is Gujarat's other signature form. Both are participatory community traditions rather than performances to watch from the sidelines."
+    },
+
+    {
+        id: "stories",
+        title: "Local Stories",
+        icon: "bi-book",
+        summary: "Every pol carries an oral history, of the trade guild, family, or event that gave it its name.",
+        body: "Much of Ahmedabad's cultural memory is oral rather than archival: pol names recall a founding trade guild or family, chabutra bird-towers recall Jain principles of non-violence extended to birds, and old-city elders can usually explain why a particular haveli carries a particular carving. Heritage walks are often the only way visitors access this layer of history."
+    },
+
+    {
+        id: "living-heritage",
+        title: "Living Heritage",
+        icon: "bi-houses",
+        summary: "What sets Ahmedabad apart from a museum city: people still live, cook and worship inside the same structures that earned it UNESCO status.",
+        body: "Ahmedabad's UNESCO inscription recognised the old city specifically as a living heritage, pols that are still residential, mosques and temples still in active daily use, and markets still trading in their original locations. Visiting responsibly means recognising that a monument here may also be someone's home or workplace."
+    }
+];
+
+
+/* Heritage walks used on heritage-walks.html */
+const HERITAGE_WALKS = [
+    {
+        id: "morning-walk",
+        title: "Morning Heritage Walk",
+        type: "Morning",
+        duration: "2.5 hours",
+        difficulty: "Easy",
+        stops: 7,
+        startingPoint: "Swaminarayan Temple, Kalupur",
+        endingPoint: "Manek Chowk",
+        route: [7, 12, 13, 15, 5, 3, 6],
+        culturalStory: "Timed to the cool early hours when pol residents are opening shopfronts and temple bells are ringing for morning aarti, this walk moves from Kalupur's active Swaminarayan temple through quiet residential pols before ending at Manek Chowk just as the jewellery market opens for the day."
+    },
+
+    {
+        id: "evening-walk",
+        title: "Evening Heritage Walk",
+        type: "Evening",
+        duration: "3 hours",
+        difficulty: "Moderate",
+        stops: 6,
+        startingPoint: "Bhadra Fort",
+        endingPoint: "Manek Chowk (night food market)",
+        route: [1, 2, 4, 3, 5, 6],
+        culturalStory: "Beginning at the city's founding citadel as the afternoon heat eases, this walk crosses Teen Darwaza and Sidi Saiyyed's famous jali before ending, deliberately, at Manek Chowk just as its street-food stalls light up for the night.",
+    },
+
+    {
+        id: "custom-walk",
+        title: "Custom Walk",
+        type: "Custom",
+        duration: "Flexible",
+        difficulty: "You choose",
+        stops: 0,
+        startingPoint: "Your choice",
+        endingPoint: "Your choice",
+        route: [],
+        culturalStory: "Build your own route from any heritage sites saved to your trip. Add stops from the Explore page or Map, and HeritageX will lay them out in a walkable order."
+    }
+];
+
+
+/* Demo review seed data, keyed by site id */
+const REVIEWS_SEED = {
+    1: [
+        {
+            id: "r1",
+            author: "Priya M.",
+            rating: 5,
+            text: "Standing where the city itself began 600 years ago is genuinely moving. Go early before the heat.",
+            date: "2026-07-02",
+            helpful: 24
+        },
+        {
+            id: "r2",
+            author: "Arjun T.",
+            rating: 4,
+            text: "Compact but historically dense. The clock tower view is worth the short climb.",
+            date: "2026-06-18",
+            helpful: 11
+        }
+    ],
+
+    4: [
+        {
+            id: "r3",
+            author: "Meera S.",
+            rating: 5,
+            text: "The jali screens are even finer in person than in photos. Ten minutes turned into forty.",
+            date: "2026-07-11",
+            helpful: 38
+        },
+        {
+            id: "r4",
+            author: "Rohan K.",
+            rating: 5,
+            text: "Small building, huge craftsmanship. Don't rush this one.",
+            date: "2026-05-29",
+            helpful: 19
+        }
+    ],
+
+    6: [
+        {
+            id: "r5",
+            author: "Sana P.",
+            rating: 5,
+            text: "Go hungry. The night food market is chaotic in the best way.",
+            date: "2026-07-20",
+            helpful: 52
+        },
+        {
+            id: "r6",
+            author: "Devraj B.",
+            rating: 4,
+            text: "Great for jewellery browsing by day, completely different vibe after dark for food.",
+            date: "2026-06-05",
+            helpful: 17
+        }
+    ]
+};
+
+
+/* ---------------------------
+   Shared helper functions — every page should go through these rather
+   than touching the arrays above directly.
+   --------------------------- */
+
+function getAllSites() {
+    return HERITAGE_SITES;
+}
+
+function getSiteById(id) {
+    return HERITAGE_SITES.find((s) => s.id === Number(id));
+}
+
+function getSiteBySlug(slug) {
+    return HERITAGE_SITES.find((s) => s.slug === slug);
+}
+
+function getSitesByIds(ids) {
+    return ids.map((id) => getSiteById(id)).filter(Boolean);
+}
+
+function getCategories() {
+    return [...new Set(HERITAGE_SITES.map((s) => s.category))];
+}
+
+function getReviews(siteId) {
+    return REVIEWS_SEED[siteId] || [];
+}
+
+
+/* Haversine distance in km between two lat/lng pairs */
+function distanceKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c =
+        2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+}
+
+
+/* A rough demo "current location" — Lal Darwaza area, centre of the old city */
+const DEMO_USER_LOCATION = {
+    latitude: 23.0235,
+    longitude: 72.586,
+    label: "Lal Darwaza (demo location)"
+};

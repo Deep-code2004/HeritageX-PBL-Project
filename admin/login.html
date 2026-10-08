@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Not a security control — see comment in admin-auth.js. This only
+     reduces the chance of the page being accidentally indexed by search
+     engines. Real access control must happen server-side. -->
+    <meta name="robots" content="noindex, nofollow">
+    <title>Admin Login | HeritageX</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+
+<body class="admin-body">
+
+    <div class="admin-login-wrap">
+        <div class="admin-login-card">
+            <div class="admin-login-brand">
+                <span class="mark"><i class="bi bi-bank2"></i></span> HeritageX
+            </div>
+            <p class="admin-eyebrow mb-3">Administrator Access</p>
+            <h1 class="h4 mb-1">Admin Login</h1>
+            <p class="text-secondary small mb-4">Restricted area. Sign in with your administrator credentials.</p>
+
+            <div class="admin-demo-note mb-3">
+                <i class="bi bi-info-circle me-1"></i>
+                Frontend prototype: this is a demo login, not a secured production system. See project notes for
+                details.
+            </div>
+
+            <div id="loginError" class="admin-error-box mb-3 d-none" role="alert" aria-live="assertive">
+                Invalid administrator credentials.
+            </div>
+
+            <form id="loginForm" novalidate>
+                <div class="mb-3">
+                    <label for="username" class="form-label small fw-semibold">Username or email</label>
+                    <input type="text" id="username" class="form-control" autocomplete="username" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label small fw-semibold">Password</label>
+                    <div class="admin-input-group">
+                        <input type="password" id="password" class="form-control pe-5" autocomplete="current-password"
+                            required>
+                        <button type="button" class="toggle-password" id="togglePassword" aria-label="Show password"
+                            aria-pressed="false">
+                            <i class="bi bi-eye" id="toggleIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-admin-primary w-100" id="loginBtn">
+                    <span id="loginBtnText">Log in</span>
+                    <span id="loginSpinner" class="spinner-border spinner-border-sm ms-2 d-none" role="status"
+                        aria-hidden="true"></span>
+                </button>
+            </form>
+
+            <p class="text-center text-secondary small mt-4 mb-0">
+                <a href="../index.html" class="text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Back to
+                    HeritageX</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="js/admin-auth.js"></script>
+    <script>
+        // If already authenticated, skip straight to the dashboard.
+        if (isAdminAuthenticated()) {
+            window.location.href = "dashboard.html";
+        }
+
+        const form = document.getElementById("loginForm");
+        const errorBox = document.getElementById("loginError");
+        const loginBtn = document.getElementById("loginBtn");
+        const loginBtnText = document.getElementById("loginBtnText");
+        const loginSpinner = document.getElementById("loginSpinner");
+
+        document.getElementById("togglePassword").addEventListener("click", function () {
+            const pw = document.getElementById("password");
+            const icon = document.getElementById("toggleIcon");
+            const showing = pw.type === "text";
+            pw.type = showing ? "password" : "text";
+            icon.className = showing ? "bi bi-eye" : "bi bi-eye-slash";
+            this.setAttribute("aria-pressed", String(!showing));
+            this.setAttribute("aria-label", showing ? "Show password" : "Hide password");
+        });
+
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            errorBox.classList.add("d-none");
+
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            // Loading state
+            loginBtn.disabled = true;
+            loginBtnText.textContent = "Signing in…";
+            loginSpinner.classList.remove("d-none");
+
+            // Simulated latency so the loading state is visible in the demo —
+            // a real backend call would replace this timeout entirely.
+            setTimeout(() => {
+                const result = loginAdmin(username, password);
+                loginBtn.disabled = false;
+                loginBtnText.textContent = "Log in";
+                loginSpinner.classList.add("d-none");
+
+                if (result.success) {
+                    window.location.href = "dashboard.html";
+                } else {
+                    // Deliberately generic — never reveal whether the username or
+                    // password was the incorrect part.
+                    errorBox.textContent = "Invalid administrator credentials.";
+                    errorBox.classList.remove("d-none");
+                }
+            }, 500);
+        });
+    </script>
+</body>
+
+</html>
