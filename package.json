@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "npm --prefix backend run dev",
-    "build": "npm --prefix backend run build",
-    "start": "npm --prefix backend run start",
+    "build": "echo 'Static frontend — no build step required'",
+    "start": "echo 'Static frontend — served by Vercel/Netlify CDN'",
     "test": "npm --prefix backend run test"
   },
   "dependencies": {
