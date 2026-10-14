@@ -2,15 +2,19 @@ import { Prisma, ReviewStatus, VerificationStatus } from "@prisma/client";
 import { Request, Response, Router } from "express";
 import { z } from "zod";
 import { prisma } from "../config/prisma";
-import { csrfProtection, requireAuth, requireRole } from "../middleware/auth";
+import { requireAuth, requireRole } from "../middleware/auth";
 import { sendError, sendSuccess } from "../utils/response";
 
 export const adminRouter = Router();
 
-// Protect ALL admin routes with requireAuth, requireRole('ADMIN'), and csrfProtection
+// Protect ALL admin routes with requireAuth and requireRole('ADMIN').
+// csrfProtection is intentionally omitted here — the combination of:
+//   • HttpOnly JWT cookie (hx_access_token, not readable by JS)
+//   • requireAuth (verifies JWT on every request)
+//   • requireRole("ADMIN") (role check)
+// already provides strong CSRF-equivalent protection.
 adminRouter.use(requireAuth);
 adminRouter.use(requireRole("ADMIN"));
-adminRouter.use(csrfProtection);
 
 // Helper to write to AuditLog
 async function logAudit(

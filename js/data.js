@@ -706,7 +706,7 @@ const HERITAGE_WALKS = [
 ];
 
 
-/* Demo review seed data, keyed by site id */
+/* Review seed data, keyed by site id */
 const REVIEWS_SEED = {
     1: [
         {
@@ -815,12 +815,4 @@ function distanceKm(lat1, lon1, lat2, lon2) {
         2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     return R * c;
-}
-
-
-/* A rough demo "current location" — Lal Darwaza area, centre of the old city */
-const DEMO_USER_LOCATION = {
-    latitude: 23.0235,
-    longitude: 72.586,
-    label: "Lal Darwaza (demo location)"
-};
+}

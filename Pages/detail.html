@@ -11,7 +11,6 @@
     rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="../styles/style.css">
 </head>
 
@@ -43,7 +42,7 @@
               aria-label="Profile menu"><i class="bi bi-person-circle"></i></button>
             <ul class="dropdown-menu dropdown-menu-end">
               <li>
-                <h6 class="dropdown-header">Demo Visitor</h6>
+                <h6 class="dropdown-header">My Account</h6>
               </li>
               <li><a class="dropdown-item" href="../Pages/saved.html"><i class="bi bi-bookmark-heart me-2"></i>Saved
                   places</a></li>
@@ -63,7 +62,7 @@
   <footer class="hx-footer py-5" id="siteFooter"></footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBkIuVBKqiEELLO9YJz5QDGablVhVyib-0" async defer></script>
   <script src="../js/data.js"></script>
   <script src="../js/main.js"></script>
   <script src="../js/footer.js"></script>
@@ -131,7 +130,6 @@
         <div class="d-flex flex-wrap gap-3 mb-3 text-charcoal-soft small">
           <span><i class="bi bi-star-fill text-warning"></i> ${site.rating.toFixed(1)} (${site.reviewCount} reviews)</span>
           <span><i class="bi bi-clock"></i> ${site.duration}</span>
-          <span><i class="bi bi-geo-alt"></i> ${distanceKm(DEMO_USER_LOCATION.latitude, DEMO_USER_LOCATION.longitude, site.latitude, site.longitude).toFixed(1)} km from Lal Darwaza</span>
         </div>
         <p class="lead" style="font-size:1.1rem;">${site.shortDescription}</p>
 
@@ -172,7 +170,7 @@
         <div id="reviewList"></div>
 
         <div class="filter-panel mt-4">
-          <h3 class="h6">Write a review <span class="small text-charcoal-soft fw-normal">(demo — held for moderation)</span></h3>
+          <h3 class="h6">Write a review</h3>
           <form id="reviewForm">
             <div class="mb-2">
               <label class="form-label small">Your rating</label><br>
@@ -304,11 +302,43 @@
         }
       });
 
-      // Detail map
-      const map = L.map("detailMap").setView([site.latitude, site.longitude], 15);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap contributors" }).addTo(map);
-      L.marker([site.latitude, site.longitude]).addTo(map).bindPopup(`<strong>${site.name}</strong>`).openPopup();
-      nearby.forEach((n) => L.circleMarker([n.latitude, n.longitude], { radius: 6, color: "#C17A45" }).addTo(map).bindPopup(n.name));
+      // Detail map — Google Maps
+      function initDetailMap() {
+        const detailMap = new google.maps.Map(document.getElementById("detailMap"), {
+          center: { lat: site.latitude, lng: site.longitude },
+          zoom: 15,
+          mapTypeControl: false,
+          streetViewControl: false
+        });
+        const iw = new google.maps.InfoWindow({ content: `<strong>${site.name}</strong>` });
+        const mainMarker = new google.maps.Marker({
+          position: { lat: site.latitude, lng: site.longitude },
+          map: detailMap,
+          title: site.name
+        });
+        iw.open(detailMap, mainMarker);
+        nearby.forEach((n) => {
+          const nm = new google.maps.Marker({
+            position: { lat: n.latitude, lng: n.longitude },
+            map: detailMap,
+            title: n.name,
+            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 6, fillColor: "#C17A45", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 }
+          });
+          nm.addListener("click", () => {
+            new google.maps.InfoWindow({ content: n.name }).open(detailMap, nm);
+          });
+        });
+
+        // Also update directions button to use Google Maps
+        document.getElementById("directionsBtn").addEventListener("click", () => {
+          window.open(`https://www.google.com/maps/dir/?api=1&destination=${site.latitude},${site.longitude}`, "_blank", "noopener");
+        });
+      }
+      if (typeof google !== "undefined" && google.maps) {
+        initDetailMap();
+      } else {
+        window.addEventListener("load", initDetailMap);
+      }
     });
   </script>
 </body>

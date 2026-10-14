@@ -108,23 +108,73 @@ function updateSummary(sites) {
     document.getElementById("sumTotal").textContent = fmt(totalVisitMin + travelMin);
 }
 
-let itMap, itLayer;
+let itMap, itPolyline = null, itMarkers = [];
 function renderItineraryMap(sites) {
-    if (!itMap) {
-        itMap = L.map("itineraryMap", { scrollWheelZoom: false }).setView([23.028, 72.585], 13);
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap contributors" }).addTo(itMap);
-        itLayer = L.layerGroup().addTo(itMap);
+    const container = document.getElementById("itineraryMap");
+    if (!container) return;
+
+    if (!itMap && typeof google !== "undefined" && google.maps) {
+        itMap = new google.maps.Map(container, {
+            center: { lat: 23.028, lng: 72.585 },
+            zoom: 13,
+            scrollwheel: false,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false
+        });
     }
-    itLayer.clearLayers();
+    if (!itMap) return;
+
+    // Clear old markers & polyline
+    itMarkers.forEach((m) => m.setMap(null));
+    itMarkers = [];
+    if (itPolyline) { itPolyline.setMap(null); itPolyline = null; }
+
     if (!sites.length) return;
-    const latlngs = sites.map((s) => [s.latitude, s.longitude]);
+
+    const latlngs = sites.map((s) => ({ lat: s.latitude, lng: s.longitude }));
+    const infoWindow = new google.maps.InfoWindow();
+
     sites.forEach((s, i) => {
-        L.marker([s.latitude, s.longitude], {
-            icon: L.divIcon({ className: "", html: `<div style="background:#6E1E24;color:#F8F3E8;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;border:2px solid #fff;">${i + 1}</div>` })
-        }).addTo(itLayer).bindPopup(s.name);
+        const marker = new google.maps.Marker({
+            position: { lat: s.latitude, lng: s.longitude },
+            map: itMap,
+            title: s.name,
+            label: {
+                text: String(i + 1),
+                color: "#F8F3E8",
+                fontWeight: "700",
+                fontSize: "12px"
+            },
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 14,
+                fillColor: "#6E1E24",
+                fillOpacity: 1,
+                strokeColor: "#ffffff",
+                strokeWeight: 2
+            }
+        });
+        marker.addListener("click", () => {
+            infoWindow.setContent(`<strong>${s.name}</strong>`);
+            infoWindow.open(itMap, marker);
+        });
+        itMarkers.push(marker);
     });
-    L.polyline(latlngs, { color: "#C17A45", weight: 3, dashArray: "6 6" }).addTo(itLayer);
-    itMap.fitBounds(latlngs, { padding: [30, 30] });
+
+    itPolyline = new google.maps.Polyline({
+        path: latlngs,
+        geodesic: true,
+        strokeColor: "#C17A45",
+        strokeOpacity: 0,
+        icons: [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 3 }, offset: "0", repeat: "14px" }],
+        strokeWeight: 3,
+        map: itMap
+    });
+
+    const bounds = new google.maps.LatLngBounds();
+    latlngs.forEach((ll) => bounds.extend(ll));
+    itMap.fitBounds(bounds, { top: 30, right: 30, bottom: 30, left: 30 });
 }
 
 function populateAddPlaceSelect() {

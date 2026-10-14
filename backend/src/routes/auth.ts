@@ -136,7 +136,7 @@ authRouter.post("/login", async (req: Request, res: Response): Promise<any> => {
     let lockedUntil: Date | null = null;
 
     if (failedLogins >= 5) {
-      lockedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 min lock
+      lockedUntil = new Date(Date.now() + 5 * 60 * 1000); // 5 min lock
     }
 
     await prisma.user.update({
@@ -228,7 +228,7 @@ authRouter.post("/admin/login", async (req: Request, res: Response): Promise<any
     const failedLogins = user.failedLogins + 1;
     let lockedUntil: Date | null = null;
     if (failedLogins >= 5) {
-      lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+      lockedUntil = new Date(Date.now() + 5 * 60 * 1000);
     }
     await prisma.user.update({
       where: { id: user.id },

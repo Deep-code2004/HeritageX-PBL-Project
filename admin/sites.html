@@ -110,7 +110,7 @@
 
     <!-- ADD/EDIT SITE MODAL -->
     <div class="modal fade" id="siteModal" tabindex="-1" aria-labelledby="siteModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form id="siteForm">
                     <div class="modal-header">
@@ -119,23 +119,55 @@
                     </div>
                     <div class="modal-body">
                         <input type="hidden" id="siteFormId">
-                        <div class="mb-2"><label class="form-label small">Name</label><input required id="siteFormName"
-                                class="form-control"></div>
-                        <div class="mb-2"><label class="form-label small">Category</label>
-                            <select id="siteFormCategory" class="form-select"></select>
-                        </div>
-                        <div class="mb-2"><label class="form-label small">Short description</label><textarea
-                                id="siteFormDesc" class="form-control" rows="2" required></textarea></div>
-                        <div class="mb-2"><label class="form-label small">Verification status</label>
-                            <select id="siteFormVerified" class="form-select">
-                                <option value="true">Verified</option>
-                                <option value="false">Pending verification</option>
-                            </select>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Name <span class="text-danger">*</span></label>
+                                <input required id="siteFormName" class="form-control" placeholder="e.g. Bhadra Fort">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Category <span class="text-danger">*</span></label>
+                                <select id="siteFormCategory" class="form-select"></select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Verification Status</label>
+                                <select id="siteFormVerified" class="form-select">
+                                    <option value="true">Verified</option>
+                                    <option value="false">Pending verification</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Short Description <span class="text-danger">*</span></label>
+                                <textarea id="siteFormDesc" class="form-control" rows="2" required
+                                    placeholder="A brief one-sentence description of the heritage site."></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Image URL</label>
+                                <input type="url" id="siteFormImage" class="form-control"
+                                    placeholder="https://… (leave blank for default image)">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Timings</label>
+                                <input id="siteFormTimings" class="form-control" placeholder="e.g. 9:00 AM – 6:00 PM daily">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Entry Fee</label>
+                                <input id="siteFormFee" class="form-control" placeholder="e.g. Free / ₹25">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Latitude</label>
+                                <input type="number" step="any" id="siteFormLat" class="form-control"
+                                    placeholder="23.0225">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Longitude</label>
+                                <input type="number" step="any" id="siteFormLng" class="form-control"
+                                    placeholder="72.5827">
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-admin-primary">Save site</button>
+                        <button type="submit" class="btn btn-admin-primary" id="saveSiteBtn">Save site</button>
                     </div>
                 </form>
             </div>
@@ -143,8 +175,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../js/data.js"></script>
-    <script src="../js/main.js"></script>
     <script src="js/admin-auth.js"></script>
     <script src="js/admin.js"></script>
     <script>
@@ -154,4 +184,4 @@
     </script>
 </body>
 
-</html>
+</html>

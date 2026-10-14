@@ -18,17 +18,18 @@ export const globalRateLimiter = rateLimit({
 });
 
 export const authRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // Max 20 login/register attempts per 15 min per IP
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 15, // Max 15 login/register attempts per 5 min per IP
   standardHeaders: true,
   legacyHeaders: false,
   handler: (_req, res) => {
     sendError(
       res,
       "AUTH_RATE_LIMIT_EXCEEDED",
-      "Too many authentication attempts, please try again in 15 minutes",
+      "Too many authentication attempts. Please try again in 5 minutes.",
       undefined,
       429
     );
   },
 });
+
