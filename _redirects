@@ -1,2 +1,0 @@
-# Netlify API proxy rule for HeritageX backend
-/api/*  https://heritagex-pbl-project.onrender.com/api/:splat  200

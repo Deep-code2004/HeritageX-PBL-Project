@@ -6,6 +6,7 @@ import helmet from "helmet";
 import hpp from "hpp";
 import pinoHttp from "pino-http";
 import { env } from "./config/env";
+import { prisma } from "./config/prisma";
 import { errorHandler } from "./middleware/errorHandler";
 import { globalRateLimiter } from "./middleware/rateLimiter";
 import { sendSuccess } from "./utils/response";
@@ -26,16 +27,9 @@ app.use(compression());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. mobile apps, curl, or same-origin)
+      // Non-browser clients do not send Origin; browser origins must match exactly.
       if (!origin) return callback(null, true);
-      if (
-        env.CORS_ORIGINS.some((allowed) =>
-          allowed.includes("*") ? true : allowed === origin
-        )
-      ) {
-        return callback(null, true);
-      }
-      return callback(null, true); // Permissive in dev to avoid blocking legitimate local dev hosts
+      return callback(null, env.CORS_ORIGINS.includes(origin));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -74,6 +68,28 @@ app.get("/api/health", (_req: Request, res: Response) => {
     environment: env.NODE_ENV,
     timestamp: new Date().toISOString(),
   });
+});
+
+// Readiness check verifies the database before the instance receives traffic.
+app.get("/api/ready", async (_req: Request, res: Response): Promise<any> => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return sendSuccess(res, {
+      status: "ready",
+      database: "connected",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    const errorName = error instanceof Error ? error.name : "Unknown error";
+    console.error("Readiness check failed: database is unavailable", errorName);
+    return res.status(503).json({
+      success: false,
+      error: {
+        code: "SERVICE_UNAVAILABLE",
+        message: "The service is not ready",
+      },
+    });
+  }
 });
 
 // Authentication Routes

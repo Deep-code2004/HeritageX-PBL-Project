@@ -3,8 +3,38 @@
 > A digital platform for discovering heritage, culture, local experiences, and tourism destinations through a modern and intelligent web interface.
 
 **Project Type:** B.Tech Computer Engineering — PBL Project  
-**Project Status:** 🟢 Frontend Completed · 🚧 Backend Integration Pending  
+**Project Status:** 🟢 Visitor catalogue, authentication, saved places, itineraries and moderated reviews are API-backed · 🚧 Remaining visitor flows continue to use legacy sample data
 **Live Frontend:** [https://heritage-x.netlify.app/](https://heritage-x.netlify.app/)
+
+---
+
+## Local Development (Windows)
+
+The frontend and backend run as separate processes. Do not open `index.html` directly as a `file://` URL.
+
+1. Install backend dependencies once: `npm --prefix backend install`.
+2. Copy `backend/.env.example` to `backend/.env`, then set a reachable PostgreSQL `DATABASE_URL`, `DIRECT_URL`, and unique local JWT secrets. Use the pooled URL for the app and the direct URL for Prisma migrations; for a non-pooled local PostgreSQL instance, both may use the same URL.
+3. Apply migrations to the intended development database: `npm --prefix backend run prisma:migrate`.
+4. To load demo content, seed only that development database: `npm --prefix backend run prisma:seed`.
+5. In one terminal at the repository root, start the API: `npm run dev`.
+6. In a second terminal at the repository root, serve the website: `npm run dev:frontend`.
+7. Open `http://localhost:8000` in a browser.
+
+Check `http://localhost:5000/api/health` for process liveness and `http://localhost:5000/api/ready` for database readiness. The frontend calls the local API at port 5000; local CORS is restricted to configured localhost development origins. Keep both terminals running.
+
+## Production Environment
+
+Configure `NODE_ENV=production`, `PORT`, pooled runtime `DATABASE_URL`, direct migration `DIRECT_URL`, distinct `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` values (at least 32 characters each), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `CORS_ORIGINS` in the backend hosting provider's secret/environment settings. Production `CORS_ORIGINS` is required and must list only exact deployed frontend origins, comma-separated, with no paths, wildcards, or trailing slash. Use the direct database URL for Prisma migration jobs and test schema changes against an isolated staging branch/database first. Never commit `.env` files or production credentials.
+
+Netlify and Vercel proxy `/api/*` through serverless functions to preserve same-origin HttpOnly session cookies. Set `API_BACKEND_URL` in each frontend provider's server-side environment settings to the backend origin only (for example, `https://your-api.example.com`, without `/api`); the proxy appends `/api`. Never put this variable or database/JWT credentials into frontend code. `js/runtime-config.js` intentionally leaves the API base unset so the site uses the same-origin proxy. The backend's `CORS_ORIGINS` must list exact deployed frontend origins.
+
+For a Render backend, [render.yaml](./render.yaml) defines the Node service build, Prisma migration deploy command, and database-backed `/api/ready` health check. Add the listed secrets and connection URLs in Render before its first deploy. Use a pooled `DATABASE_URL` for runtime traffic and a direct `DIRECT_URL` for Prisma migrations. After the first deployment, initialize content and the first administrator in a controlled one-time operation with `npm run prisma:seed`; review the seed script and target database before running it. Do not run the demo seed against a populated production database.
+
+### Automated checks
+
+- Backend build and database integration tests: `npm --prefix backend run build` and `npm --prefix backend test` (requires PostgreSQL and seeded fixtures).
+- Browser E2E: `npm install`, `npx playwright install chromium`, then `npm run test:e2e`. These tests mock the API and do not need production credentials.
+- GitHub Actions runs the backend suite against an ephemeral PostgreSQL service and the browser E2E suite on pushes and pull requests.
 
 ---
 
@@ -99,7 +129,7 @@ The platform provides map-based exploration for discovering heritage locations a
 - Map-based discovery
 
 ### 🧭 Trip Planner
-Users can create an ordered travel itinerary based on selected destinations. The frontend supports the interface and workflow for:
+Signed-in users can persist an ordered travel itinerary to the backend; guest plans remain local until sign-in. The trip planner supports:
 - Selecting places
 - Organizing destinations
 - Viewing location information
@@ -109,7 +139,7 @@ Users can create an ordered travel itinerary based on selected destinations. The
 - Route order
 
 ### ❤️ Saved Places
-Users can save interesting destinations for future reference. The current frontend uses browser-side storage for selected saved-place functionality. This can be connected to user accounts and a backend database during backend integration.
+Signed-in users can save interesting destinations to their account. Guest bookmarks stay in browser storage and are merged into the account after successful sign-in.
 
 ### ⭐ Ratings & Reviews
 The platform provides frontend interfaces for:
@@ -118,7 +148,7 @@ The platform provides frontend interfaces for:
 - Feedback
 - Review moderation through the admin interface
 
-Backend integration will provide persistent storage, validation, authentication, and moderation workflows.
+Signed-in visitors can submit reviews for server-side validation and moderation. Only approved reviews appear publicly.
 
 ### 🎭 Culture & Heritage
 The platform covers cultural elements beyond monuments, including:

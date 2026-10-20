@@ -94,6 +94,8 @@ heritageRouter.get("/", async (req: Request, res: Response): Promise<any> => {
     orderBy = { durationMinutes: "asc" };
   } else if (sort === "new") {
     orderBy = { createdAt: "desc" };
+  } else if (sort === "reviews") {
+    orderBy = { reviewCount: "desc" };
   }
 
   const [total, sites] = await Promise.all([

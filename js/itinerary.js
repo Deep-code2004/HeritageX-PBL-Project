@@ -3,9 +3,14 @@
    --------------------------- */
 
 const TRAVEL_BUFFER_MIN = 15; // assumed walk/transfer time between consecutive stops
+let itinerarySiteCache = new Map();
+let activeItineraryId = null;
 
 function getItinerary() { return lsGet(LS_KEYS.itinerary, []); }
 function setItinerary(items) { lsSet(LS_KEYS.itinerary, items); }
+function getItinerarySite(siteId) {
+    return itinerarySiteCache.get(Number(siteId)) || getSiteById(siteId);
+}
 
 function durationMidpoint(str) {
     const nums = (str.match(/\d+/g) || []).map(Number);
@@ -40,7 +45,7 @@ function renderItinerary() {
 
     const rows = [];
     items.forEach((item, idx) => {
-        const site = getSiteById(item.siteId);
+        const site = getItinerarySite(item.siteId);
         if (!site) return;
         const arrival = formatClock(clock);
         rows.push({ item, site, idx, arrival });
@@ -51,13 +56,13 @@ function renderItinerary() {
     <div class="itinerary-item" draggable="true" data-index="${idx}">
       <span class="drag-handle"><i class="bi bi-grip-vertical"></i></span>
       <span class="itinerary-time">${arrival}</span>
-      <img src="${site.image}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:10px;">
+      <img src="${escapeHTML(site.image)}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:10px;">
       <div class="flex-grow-1">
-        <div class="fw-semibold">${site.name}</div>
-        <div class="small text-charcoal-soft">${site.category} · ${site.duration}</div>
+        <div class="fw-semibold">${escapeHTML(site.name)}</div>
+        <div class="small text-charcoal-soft">${escapeHTML(site.category)} · ${escapeHTML(site.duration)}</div>
       </div>
-      <a href="detail.html?slug=${site.slug}" class="btn btn-sm btn-outline-maroon no-print" aria-label="View ${site.name}"><i class="bi bi-eye"></i></a>
-      <button class="btn btn-sm btn-outline-maroon no-print remove-stop-btn" data-index="${idx}" aria-label="Remove ${site.name} from trip"><i class="bi bi-x-lg"></i></button>
+      <a href="detail.html?slug=${encodeURIComponent(site.slug)}" class="btn btn-sm btn-outline-maroon no-print" aria-label="View ${escapeHTML(site.name)}"><i class="bi bi-eye"></i></a>
+      <button class="btn btn-sm btn-outline-maroon no-print remove-stop-btn" data-index="${idx}" aria-label="Remove ${escapeHTML(site.name)} from trip"><i class="bi bi-x-lg"></i></button>
     </div>`).join("");
 
     wireDragAndDrop();
@@ -113,80 +118,152 @@ function renderItineraryMap(sites) {
     const container = document.getElementById("itineraryMap");
     if (!container) return;
 
-    if (!itMap && typeof google !== "undefined" && google.maps) {
-        itMap = new google.maps.Map(container, {
-            center: { lat: 23.028, lng: 72.585 },
-            zoom: 13,
-            scrollwheel: false,
-            mapTypeControl: false,
-            streetViewControl: false,
-            fullscreenControl: false
+    if (!window.L) {
+        document.getElementById("itineraryMapStatus").textContent =
+            "Map preview unavailable. Your ordered stops and distance summary are still shown above.";
+        return;
+    }
+    if (!itMap) {
+        itMap = L.map(container, {
+            scrollWheelZoom: false,
+            keyboard: true
+        }).setView([23.028, 72.585], 13);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(itMap).once("tileerror", () => {
+            document.getElementById("itineraryMapStatus").textContent =
+                "Map tiles could not be loaded. Your ordered stops and distance summary remain available above.";
+            container.setAttribute("aria-label", "Itinerary route; map tiles could not be loaded");
         });
     }
-    if (!itMap) return;
-
-    // Clear old markers & polyline
-    itMarkers.forEach((m) => m.setMap(null));
+    itMarkers.forEach((marker) => marker.remove());
     itMarkers = [];
-    if (itPolyline) { itPolyline.setMap(null); itPolyline = null; }
+    if (itPolyline) { itPolyline.remove(); itPolyline = null; }
 
-    if (!sites.length) return;
+    if (!sites.length) {
+        container.setAttribute("aria-label", "No itinerary stops to display on map");
+        document.getElementById("itineraryMapStatus").textContent = "Add a stop to preview your route.";
+        return;
+    }
 
-    const latlngs = sites.map((s) => ({ lat: s.latitude, lng: s.longitude }));
-    const infoWindow = new google.maps.InfoWindow();
-
-    sites.forEach((s, i) => {
-        const marker = new google.maps.Marker({
-            position: { lat: s.latitude, lng: s.longitude },
-            map: itMap,
-            title: s.name,
-            label: {
-                text: String(i + 1),
-                color: "#F8F3E8",
-                fontWeight: "700",
-                fontSize: "12px"
-            },
-            icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 14,
-                fillColor: "#6E1E24",
-                fillOpacity: 1,
-                strokeColor: "#ffffff",
-                strokeWeight: 2
-            }
+    const latlngs = sites.map((site) => [site.latitude, site.longitude]);
+    sites.forEach((site, index) => {
+        const icon = L.divIcon({
+            className: "hx-map-stop",
+            html: `<span aria-hidden="true">${index + 1}</span>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
         });
-        marker.addListener("click", () => {
-            infoWindow.setContent(`<strong>${s.name}</strong>`);
-            infoWindow.open(itMap, marker);
-        });
+        const marker = L.marker(latlngs[index], {
+            icon,
+            title: `${index + 1}. ${site.name}`,
+            alt: `${index + 1}. ${site.name}`,
+            keyboard: true
+        }).addTo(itMap);
+        const label = document.createElement("strong");
+        label.textContent = `${index + 1}. ${site.name}`;
+        marker.bindPopup(label);
         itMarkers.push(marker);
     });
 
-    itPolyline = new google.maps.Polyline({
-        path: latlngs,
-        geodesic: true,
-        strokeColor: "#C17A45",
-        strokeOpacity: 0,
-        icons: [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 3 }, offset: "0", repeat: "14px" }],
-        strokeWeight: 3,
-        map: itMap
-    });
-
-    const bounds = new google.maps.LatLngBounds();
-    latlngs.forEach((ll) => bounds.extend(ll));
-    itMap.fitBounds(bounds, { top: 30, right: 30, bottom: 30, left: 30 });
+    itPolyline = L.polyline(latlngs, { color: "#C17A45", weight: 3, dashArray: "6 6" }).addTo(itMap);
+    if (latlngs.length === 1) itMap.setView(latlngs[0], 15);
+    else itMap.fitBounds(itPolyline.getBounds(), { padding: [30, 30] });
+    container.setAttribute("aria-label", `Map showing ${sites.length} itinerary stops in order`);
+    document.getElementById("itineraryMapStatus").textContent = `Map showing ${sites.length} itinerary stops in order.`;
 }
 
 function populateAddPlaceSelect() {
     const sel = document.getElementById("addPlaceSelect");
     const inTrip = getItinerary().map((i) => i.siteId);
-    sel.innerHTML = getAllSites()
+    sel.innerHTML = [...itinerarySiteCache.values()]
         .filter((s) => !inTrip.includes(s.id))
-        .map((s) => `<option value="${s.id}">${s.name} — ${s.category}</option>`).join("");
+        .map((s) => `<option value="${s.id}">${escapeHTML(s.name)} — ${escapeHTML(s.category)}</option>`).join("");
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+async function saveItinerary() {
+    const items = getItinerary();
+    const notes = JSON.stringify({
+        date: document.getElementById("tripDate").value,
+        start: document.getElementById("tripStart").value,
+        hours: document.getElementById("tripHours").value
+    });
+    const payload = {
+        title: "My Ahmedabad Heritage Day",
+        notes,
+        stops: items.map((item) => ({
+            siteId: Number(item.siteId),
+            ...(item.time ? { visitTime: String(item.time) } : {})
+        }))
+    };
+    if (!window.HX_AUTH_USER) {
+        lsSet("heritagex_saved_itinerary_meta", {
+            date: document.getElementById("tripDate").value,
+            start: document.getElementById("tripStart").value,
+            hours: document.getElementById("tripHours").value,
+            savedAt: new Date().toISOString()
+        });
+        showToast("Itinerary saved to this device", "bi-check-circle-fill");
+        return;
+    }
+
+    const button = document.getElementById("saveTripBtn");
+    button.disabled = true;
+    try {
+        const result = activeItineraryId
+            ? await api.put(`/itineraries/${encodeURIComponent(activeItineraryId)}`, payload)
+            : await api.post("/itineraries", payload);
+        activeItineraryId = result.id;
+        showToast("Itinerary saved to your account", "bi-check-circle-fill");
+    } catch (error) {
+        showToast(error.message || "Could not save your itinerary. Your draft remains on this device.", "bi-exclamation-circle");
+    } finally {
+        button.disabled = false;
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("tripDate").valueAsDate = new Date();
+    getAllSites().forEach((site) => itinerarySiteCache.set(Number(site.id), site));
+    try {
+        const catalogue = await api.getSites({ page: 1, limit: 50 });
+        catalogue.data.forEach((site) => itinerarySiteCache.set(Number(site.id), site));
+    } catch (error) {
+        console.warn("Unable to load current heritage sites for the itinerary selector:", error.message);
+    }
+
+    const user = await (window.hxAuthReady || Promise.resolve(window.HX_AUTH_USER));
+    if (user) {
+        document.getElementById("itineraryStorageLabel").textContent = "Synced to your account";
+        try {
+            const itineraries = await api.get("/itineraries");
+            const saved = itineraries[0];
+            if (saved) {
+                activeItineraryId = saved.id;
+                saved.stops.forEach((stop) => {
+                    if (stop.site) itinerarySiteCache.set(Number(stop.site.id), api.normalizeSite(stop.site));
+                });
+                setItinerary(saved.stops.map((stop) => ({
+                    siteId: Number(stop.siteId),
+                    time: stop.visitTime || ""
+                })));
+                try {
+                    const meta = JSON.parse(saved.notes || "{}");
+                    if (meta.date) document.getElementById("tripDate").value = meta.date;
+                    if (meta.start) document.getElementById("tripStart").value = meta.start;
+                    if (meta.hours) document.getElementById("tripHours").value = meta.hours;
+                } catch {
+                    // Older free-form notes do not contain schedule metadata.
+                }
+            } else {
+                setItinerary([]);
+            }
+        } catch (error) {
+            showToast(error.message || "Could not load your saved itinerary.", "bi-exclamation-circle");
+        }
+    }
+
     renderItinerary();
     populateAddPlaceSelect();
 
@@ -210,15 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
         populateAddPlaceSelect();
     });
 
-    document.getElementById("saveTripBtn").addEventListener("click", () => {
-        lsSet("heritagex_saved_itinerary_meta", {
-            date: document.getElementById("tripDate").value,
-            start: document.getElementById("tripStart").value,
-            hours: document.getElementById("tripHours").value,
-            savedAt: new Date().toISOString()
-        });
-        showToast("Itinerary saved to this device", "bi-check-circle-fill");
-    });
+    document.getElementById("saveTripBtn").addEventListener("click", saveItinerary);
 
     document.getElementById("printTripBtn").addEventListener("click", () => window.print());
 });

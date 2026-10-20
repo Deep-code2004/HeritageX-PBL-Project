@@ -4,6 +4,8 @@ Base URL:
 - Local development: `http://localhost:5000/api`
 - Production: `https://<BACKEND_HOST>/api` (or proxied via `/api/*` on Netlify)
 
+Hosted Netlify and Vercel frontends use a same-origin `/api/*` function proxy. Set the server-side `API_BACKEND_URL` environment variable to the backend origin (without `/api`) in the frontend hosting provider. The proxy preserves request cookies and forwards response cookies; do not configure a browser-facing cross-site API URL for cookie-authenticated sessions.
+
 All mutating requests (`POST`, `PUT`, `PATCH`, `DELETE`) require header:
 `X-Requested-With: HeritageX`
 
@@ -32,12 +34,11 @@ Register a new visitor user.
         "email": "arjun@example.com",
         "role": "USER",
         "createdAt": "2026-10-08T..."
-      },
-      "accessToken": "eyJhbGci..."
+      }
     }
   }
   ```
-- **Cookies set:** `hx_access_token` (15m), `hx_refresh_token` (7d, HttpOnly)
+- **Cookies set:** `hx_access_token` (15m) and `hx_refresh_token` (7d), both HttpOnly. Tokens are not returned in the response body.
 
 ### `POST /api/auth/login`
 User login. Supports email or username `heritagex_admin`. Locks account for 15 minutes after 5 failed attempts.
@@ -53,16 +54,26 @@ User login. Supports email or username `heritagex_admin`. Locks account for 15 m
 Admin-only login. Fails with 401 if user does not hold `role: ADMIN`.
 
 ### `POST /api/auth/refresh`
-Rotates refresh token, invalidates old token, sets new access & refresh cookies.
+Rotates refresh token, invalidates the old token, and sets new HttpOnly access and refresh cookies. Tokens are not returned in the response body.
 
 ### `POST /api/auth/logout`
-Revokes current refresh token in database and clears authentication cookies.
+Revokes the refresh token from the HttpOnly cookie and clears authentication cookies. A database failure returns HTTP 503 rather than a success-shaped response.
 
 ### `GET /api/auth/me`
 Returns current session profile and stats.
 - **Headers:** cookie or `Authorization: Bearer <accessToken>`
 
 ---
+
+Authentication uses HttpOnly cookies for browsers. Access and refresh tokens are not included in JSON response bodies.
+
+## Health and readiness
+
+### `GET /api/health`
+Liveness check. Returns HTTP 200 while the process is running.
+
+### `GET /api/ready`
+Readiness check. Returns HTTP 200 when PostgreSQL is reachable and HTTP 503 otherwise.
 
 ## 2. Public Endpoints (`/api`)
 
@@ -73,7 +84,7 @@ Browse catalog of verified heritage sites.
   - `category`: Filter by category name
   - `interest`: Filter by interest (`history`, `architecture`, `food`, etc.)
   - `minRating`: Minimum rating (e.g. `4.0`)
-  - `sort`: `rating` (default) | `name` | `duration` | `new`
+  - `sort`: `rating` (default) | `reviews` | `name` | `duration` | `new`
   - `page`: Page number (default: 1)
   - `limit`: Records per page (default: 20, max: 50)
 - **Response:**
@@ -161,9 +172,18 @@ Remove a site from bookmarks.
 ### `POST /api/saved/merge`
 Merge guest `localStorage` saved sites into account on login.
 - **Request Body:** `{ "siteIds": [1, 2, 4] }`
+- Up to 100 positive integer site IDs are accepted; repeated IDs are de-duplicated.
 
 ### `GET /api/itineraries` & `POST /api/itineraries`
 List or create custom trip itineraries.
+- Each itinerary stores an ordered list of stops. The frontend stores the date, start time and available hours in the itinerary notes field.
+
+### `POST /api/itineraries/merge`
+Merge guest itinerary stops into the account's `My Ahmedabad Heritage Day` itinerary. Repeated stops are not duplicated.
+- **Request Body:** `{ "title": "My Ahmedabad Heritage Day", "stops": [{ "siteId": 1 }] }`
+
+### `PUT /api/itineraries/:id` & `DELETE /api/itineraries/:id`
+Update or remove an itinerary owned by the authenticated user.
 
 ### `POST /api/itineraries/:id/optimize`
 Sorts itinerary stops using nearest-neighbor route heuristic to minimize travel distance.
@@ -171,6 +191,7 @@ Sorts itinerary stops using nearest-neighbor route heuristic to minimize travel 
 ### `POST /api/heritage/:id/reviews`
 Submit a visitor review. Held in `PENDING` status for moderation. Text sanitized to prevent XSS.
 - **Request Body:** `{ "rating": 5, "comment": "Beautiful architecture and rich history!" }`
+- The public site detail endpoint returns approved reviews only.
 
 ---
 

@@ -1,104 +1,136 @@
-/* =========================================================================
-   HeritageX — api.js
-   Unified client for all backend REST API communication.
-   ========================================================================= */
+/* Shared API transport and response normalization for the HeritageX frontend. */
+(function () {
+    const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+    const API_BASE = window.HX_API_BASE_URL || (isLocal
+        ? `${window.location.protocol}//localhost:5000/api`
+        : `${window.location.origin}/api`);
+    let refreshRequest;
 
-const API_BASE =
-  window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:5000/api"
-    : "/api";
-
-let isRefreshing = false;
-let failedQueue = [];
-
-function processQueue(error, token = null) {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-}
-
-/**
- * Core fetch wrapper with automatic token refresh, credentials, and CSRF protection
- */
-async function api(path, options = {}) {
-  const { method = "GET", body, headers = {}, retry = true } = options;
-
-  const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
-
-  const fetchOptions = {
-    method,
-    credentials: "include", // send/receive HttpOnly cookies
-    headers: {
-      "X-Requested-With": "HeritageX", // CSRF defense
-      ...headers,
-    },
-  };
-
-  if (body !== undefined) {
-    fetchOptions.headers["Content-Type"] = "application/json";
-    fetchOptions.body = typeof body === "string" ? body : JSON.stringify(body);
-  }
-
-  try {
-    const res = await fetch(url, fetchOptions);
-    const json = await res.json().catch(() => ({}));
-
-    // Handle 401 Unauthorized with token refresh rotation
-    if (res.status === 401 && retry && !path.includes("/auth/")) {
-      if (!isRefreshing) {
-        isRefreshing = true;
-        try {
-          const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
-            method: "POST",
-            credentials: "include",
-            headers: { "X-Requested-With": "HeritageX" },
-          });
-
-          if (refreshRes.ok) {
-            isRefreshing = false;
-            processQueue(null);
-            return api(path, { ...options, retry: false });
-          } else {
-            isRefreshing = false;
-            processQueue(new Error("Session expired"));
-          }
-        } catch (refreshErr) {
-          isRefreshing = false;
-          processQueue(refreshErr);
+    class ApiError extends Error {
+        constructor(message, status, code, details) {
+            super(message);
+            this.name = "ApiError";
+            this.status = status;
+            this.code = code;
+            this.details = details;
         }
-      } else {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({
-            resolve: () => resolve(api(path, { ...options, retry: false })),
-            reject: (err) => reject(err),
-          });
-        });
-      }
     }
 
-    if (!res.ok) {
-      const err = new Error(json?.error?.message || `Request failed with status ${res.status}`);
-      err.status = res.status;
-      err.code = json?.error?.code;
-      err.details = json?.error?.details;
-      throw err;
+    async function readResponse(response) {
+        let body;
+        try {
+            body = await response.json();
+        } catch {
+            throw new ApiError("The server returned an invalid response.", response.status, "INVALID_RESPONSE");
+        }
+        if (!response.ok || body.success === false) {
+            throw new ApiError(
+                body.error?.message || `Request failed (${response.status}).`,
+                response.status,
+                body.error?.code,
+                body.error?.details
+            );
+        }
+        return body;
     }
 
-    return json;
-  } catch (error) {
-    throw error;
-  }
-}
+    async function requestEnvelope(path, options = {}, mayRefresh = true) {
+        const headers = new Headers(options.headers || {});
+        headers.set("X-Requested-With", "HeritageX");
+        if (options.body !== undefined && !(options.body instanceof FormData)) {
+            headers.set("Content-Type", "application/json");
+        }
 
-api.get = (path, opts) => api(path, { ...opts, method: "GET" });
-api.post = (path, body, opts) => api(path, { ...opts, method: "POST", body });
-api.put = (path, body, opts) => api(path, { ...opts, method: "PUT", body });
-api.patch = (path, body, opts) => api(path, { ...opts, method: "PATCH", body });
-api.delete = (path, opts) => api(path, { ...opts, method: "DELETE" });
+        let response;
+        try {
+            response = await fetch(`${API_BASE}${path}`, {
+                ...options,
+                headers,
+                credentials: "include",
+                body: options.body !== undefined && !(options.body instanceof FormData)
+                    ? JSON.stringify(options.body)
+                    : options.body
+            });
+        } catch (error) {
+            throw new ApiError("Unable to reach HeritageX. Check your connection and try again.", 0, "NETWORK_ERROR", error);
+        }
 
-window.api = api;
+        if (response.status === 401 && mayRefresh && path !== "/auth/refresh" &&
+            path !== "/auth/login" && path !== "/auth/register" && path !== "/auth/admin-login") {
+            if (!refreshRequest) {
+                refreshRequest = request("/auth/refresh", { method: "POST" }, false)
+                    .finally(() => { refreshRequest = undefined; });
+            }
+            try {
+                await refreshRequest;
+                return requestEnvelope(path, options, false);
+            } catch {
+                // Keep the original endpoint's 401 so callers can handle sign-in consistently.
+            }
+        }
+
+        const body = await readResponse(response);
+        return body;
+    }
+
+    async function request(path, options = {}, mayRefresh = true) {
+        const body = await requestEnvelope(path, options, mayRefresh);
+        if (Array.isArray(body.data) && body.meta) {
+            Object.defineProperty(body.data, "meta", { value: body.meta, configurable: true });
+        }
+        return body.data;
+    }
+
+    function normalizeSite(site) {
+        if (!site || typeof site !== "object") return site;
+        const category = typeof site.category === "object" && site.category
+            ? site.category.name
+            : (site.categoryName || site.category || "");
+        return {
+            ...site,
+            category,
+            image: site.image || site.images?.[0] || "",
+            gallery: site.gallery || site.images || [],
+            duration: site.duration || site.durationMinutes || 0,
+            rating: Number(site.rating || 0),
+            reviewCount: Number(site.reviewCount || 0),
+            reviews: Array.isArray(site.reviews)
+                ? site.reviews.map((review) => ({
+                    ...review,
+                    text: review.text || review.comment || "",
+                    date: review.date || review.createdAt || ""
+                }))
+                : []
+        };
+    }
+
+    const api = {
+        baseUrl: API_BASE,
+        ApiError,
+        get: (path, options) => request(path, options),
+        post: (path, body) => request(path, { method: "POST", body }),
+        put: (path, body) => request(path, { method: "PUT", body }),
+        delete: (path) => request(path, { method: "DELETE" }),
+        getSites: async (params = {}) => {
+            const query = new URLSearchParams();
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== "") query.set(key, value);
+            });
+            const result = await request(`/heritage${query.toString() ? `?${query}` : ""}`);
+            return {
+                data: (result || []).map(normalizeSite),
+                meta: result?.meta || {}
+            };
+        },
+        getSite: async (idOrSlug) => normalizeSite(await request(`/heritage/${encodeURIComponent(idOrSlug)}`)),
+        getCategories: () => request("/categories"),
+        normalizeSite,
+        setCurrentUser(user) {
+            window.HX_AUTH_USER = user || null;
+            if (!window.HX_AUTH_USER) window.HX_SAVED_IDS = null;
+            document.dispatchEvent(new CustomEvent("hx:auth-change", { detail: { user: window.HX_AUTH_USER } }));
+        }
+    };
+
+    window.api = api;
+})();

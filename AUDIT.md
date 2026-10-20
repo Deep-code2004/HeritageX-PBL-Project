@@ -72,9 +72,9 @@
 
 | Key | Storage | Content | Data Type | Notes |
 |---|---|---|---|---|
-| `heritagex_bookmarks` | `localStorage` | Array of saved site IDs | `number[]` | Guest bookmarks; will merge to server on user login |
-| `heritagex_itinerary` | `localStorage` | Array of trip stops | `Array<{ siteId: number, time: string }>` | Will sync with `Itinerary` table when authenticated |
-| `heritagex_reviews_<siteId>` | `localStorage` | User-submitted reviews per site | `Array<Review>` | To be replaced by server-side review moderation table |
+| `heritagex_bookmarks` | `localStorage` | Array of saved site IDs | `number[]` | Guest bookmarks; merged into the account after successful sign-in |
+| `heritagex_itinerary` | `localStorage` | Array of trip stops | `Array<{ siteId: number, time: string }>` | Guest draft; merged into the account after successful sign-in |
+| `heritagex_reviews_<siteId>` | `localStorage` | Legacy visitor review cache | `Array<Review>` | Visitor submissions now go to the authenticated moderation API |
 | `heritagex_admin_sites` | `localStorage` | Added/edited/deleted admin site overlay | `{ added: [], edited: {}, deleted: [] }` | Replaced by PostgreSQL `HeritageSite` mutations |
 | `heritagex_admin_session` | `sessionStorage` | Client session flag | `{ authenticated: boolean, timestamp: number }` | Replaced by HTTP-only JWT cookies (`/api/auth/*`) |
 
@@ -84,6 +84,7 @@
 
 | Page | Form / Element ID | Input Fields | Client Validation | Target Endpoint |
 |---|---|---|---|---|
+| `Pages/account.html` | `#loginForm` / `#registerForm` | Email, name, password | Required fields, registration password policy | `POST /api/auth/login` / `POST /api/auth/register` |
 | `index.html` | `#navSearchForm` / `#heroSearchForm` | `#navSearchInput`, `#heroSearchInput` | Trimmed non-empty string | Redirects to `/Pages/explore.html?q=...` -> `GET /api/heritage?q=` |
 | `Pages/detail.html` | `#reviewForm` | `#starValue` (1-5), `#reviewText` (textarea) | Star > 0, text trimmed non-empty | `POST /api/heritage/:id/reviews` |
 | `Pages/recommendations.html` | Choice tiles wizard | `interests[]`, `time`, `style`, `area` | Step progression checks | `POST /api/recommendations` |
@@ -98,10 +99,10 @@
 |---|---|---|---|
 | `index.html` | Featured sites, culture highlights, walks preview, map markers | Navigation search | `GET /api/heritage?limit=6`, `GET /api/culture`, `GET /api/walks` |
 | `Pages/explore.html` | Sites catalog, categories, tags | Search & filter params | `GET /api/heritage?q=&category=&sort=&page=&limit=`, `GET /api/categories` |
-| `Pages/detail.html` | Site by slug, approved reviews, nearby sites | Submit review, bookmark, add to trip | `GET /api/heritage/:slug`, `POST /api/heritage/:id/reviews`, `POST /api/saved/:siteId` |
+| `Pages/detail.html` | Site by slug, approved reviews, nearby sites | Submit review, bookmark, add to trip | `GET /api/heritage/:slug`, `POST /api/heritage/:id/reviews`, `POST /api/saved/:siteId`, `POST /api/itineraries/merge` |
 | `Pages/map.html` | Sites with lat/lng, categories, nearby distance | Geolocation / demo origin | `GET /api/heritage/nearby?lat=&lng=&radiusKm=` |
 | `Pages/recommendations.html` | Sites filtered & scored by preferences | Itinerary additions | `POST /api/recommendations`, `GET/PUT /api/me/preferences` |
-| `Pages/itinerary.html` | Itinerary stops, site details | Reorder stops, remove stops, start time | `GET/POST /api/itineraries`, `PUT /api/itineraries/:id` |
+| `Pages/itinerary.html` | Itinerary stops and site details | Reorder stops, remove stops, schedule and save | `GET/POST /api/itineraries`, `PUT /api/itineraries/:id` |
 | `Pages/culture.html` | Cultural sections | None | `GET /api/culture` |
 | `Pages/heritage-walks.html` | Walk routes, stops, site details | Add walk to itinerary | `GET /api/walks`, `POST /api/itineraries` |
 | `Pages/saved.html` | Bookmarked sites by IDs | Add to itinerary, remove bookmark | `GET /api/saved`, `POST /api/saved/merge`, `DELETE /api/saved/:siteId` |
@@ -115,15 +116,10 @@
 
 ---
 
-## 5. Current Admin Auth Mechanism & Security Audit
+## 5. Admin Authentication
 
 - **Location:** `admin/js/admin-auth.js`
-- **Current Flow:**
-  - Hardcoded credentials in `verifyDemoCredentials()`: username `heritagex_admin`, passphrase `PBL-Demo-2026!`.
-  - On submit, sets `sessionStorage.setItem("heritagex_admin_session", JSON.stringify({ authenticated: true, timestamp: Date.now() }))`.
-  - `protectAdminPage()` checks if `sessionStorage` item exists; if not, redirects to `login.html`.
-- **Target Replacement:**
-  - Secure server-side endpoint `POST /api/auth/admin/login`.
-  - Argon2id password hash verification against seeded database record.
-  - JWT Access (15m) + Refresh (7d) cookies with `httpOnly`, `Secure`, `SameSite=Lax`.
-  - Server-side middleware `requireRole('ADMIN')` on all `/api/admin/*` routes.
+- Admin login uses `POST /api/auth/admin/login`; the backend verifies the Argon2id password hash for the seeded admin record.
+- Authentication is stored in HttpOnly access (15m) and refresh (7d) cookies. Tokens must not be returned in JSON responses or stored in browser storage.
+- The sessionStorage entry is only a UI marker; all admin API authorization is enforced server-side by `requireRole('ADMIN')`.
+- Admin test credentials must be provisioned through a dedicated test database and environment, never hard-coded in source or reused from production.

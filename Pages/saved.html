@@ -60,7 +60,7 @@
     <main id="main">
         <section class="section-tight bg-ivory-deep">
             <div class="container">
-                <p class="eyebrow">Stored on this device</p>
+                <p class="eyebrow" id="savedStorageLabel">Saved places</p>
                 <h1 class="section-title mb-2">Saved places</h1>
                 <p class="section-lede">Everything you've bookmarked while exploring. Add any of these straight to your
                     trip.</p>
@@ -84,14 +84,30 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../js/data.js"></script>
-    <script src="../js/main.js"></script>
+    <script src="../js/runtime-config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/main.js?v=api-persistence"></script>
     <script src="../js/footer.js"></script>
     <script>
-        function renderSaved() {
-            const ids = getBookmarks();
-            const sites = getSitesByIds(ids);
+        async function renderSaved() {
             const grid = document.getElementById("savedGrid");
             const empty = document.getElementById("savedEmpty");
+            let sites;
+            try {
+                await (window.hxAuthReady || Promise.resolve());
+                if (window.HX_AUTH_USER) {
+                    document.getElementById("savedStorageLabel").textContent = "Synced to your account";
+                    sites = (await api.get("/saved")).map(api.normalizeSite);
+                    document.querySelector(".section-lede").textContent = "Your saved heritage places are available across your signed-in devices.";
+                } else {
+                    document.getElementById("savedStorageLabel").textContent = "Stored on this device";
+                    sites = getSitesByIds(getBookmarks());
+                }
+            } catch (error) {
+                grid.innerHTML = `<div class="col-12"><div class="alert alert-warning" role="alert">${escapeHTML(error.message)} Saved places were not changed.</div></div>`;
+                empty.classList.add("d-none");
+                return;
+            }
             if (!sites.length) {
                 grid.innerHTML = "";
                 empty.classList.remove("d-none");
@@ -104,16 +120,17 @@
       <button class="btn btn-outline-maroon btn-sm w-100 mt-2 add-trip-from-saved" data-id="${s.id}"><i class="bi bi-plus-circle me-1"></i> Add to Trip</button>
     </div>`).join("");
             grid.querySelectorAll(".add-trip-from-saved").forEach((btn) => {
-                btn.addEventListener("click", () => {
+                btn.addEventListener("click", async () => {
                     const id = Number(btn.dataset.id);
-                    const itinerary = lsGet(LS_KEYS.itinerary, []);
-                    if (!itinerary.find((i) => i.siteId === id)) itinerary.push({ siteId: id, time: "" });
-                    lsSet(LS_KEYS.itinerary, itinerary);
-                    showToast("Added to your trip", "bi-map");
+                    btn.disabled = true;
+                    await hxAddSiteToTrip(id);
+                    btn.disabled = false;
                 });
             });
         }
-        document.addEventListener("DOMContentLoaded", renderSaved);
+        document.addEventListener("DOMContentLoaded", () => {
+            (window.hxAuthReady || Promise.resolve()).finally(renderSaved);
+        });
     </script>
 </body>
 

@@ -1,214 +1,250 @@
-/* ---------------------------
-   HeritageX — map.js
-   Google Maps JavaScript API (replaces Leaflet + OpenStreetMap)
-   --------------------------- */
-
+/* Accessible Leaflet map backed by the public heritage catalogue API. */
 const CATEGORY_COLORS = {
     "Historical Monuments": "#6E1E24",
-    "Sultanate Heritage":   "#C17A45",
-    "Religious Heritage":   "#A9822C",
-    "Pols & Havelis":       "#2f7a4d",
-    "Museums":              "#3a5a8c",
-    "Markets":              "#B5533C",
-    "Living Heritage":      "#8a3037"
+    "Sultanate Heritage": "#C17A45",
+    "Religious Heritage": "#A9822C",
+    "Pols & Havelis": "#2f7a4d",
+    "Museums": "#3a5a8c",
+    "Markets": "#B5533C",
+    "Living Heritage": "#8a3037"
 };
+const AHMEDABAD_CENTRE = [23.028, 72.585];
+let heritageMap;
+let userLocation;
+let heritageSites = [];
+let activeMarkers = new Map();
+let userLocationMarker;
+let tileErrorReported = false;
 
-// Ahmedabad old city centre — initial map view and fallback
-const AHMEDABAD_CENTRE = { lat: 23.028, lng: 72.585 };
-
-let map, currentInfoWindow = null, userMarker = null;
-let currentUserLoc = null;
-let allMarkersData = []; // { marker, site }
-
-function categoryColor(cat) { return CATEGORY_COLORS[cat] || "#6E1E24"; }
-
-function popupHTML(site, distText) {
-    return `
-    <div style="width:210px;font-family:inherit;">
-      <img src="${site.image}" alt="${site.name}"
-        style="width:100%;height:105px;object-fit:cover;border-radius:8px;margin-bottom:8px;"
-        onerror="this.style.display='none'">
-      <strong style="font-size:0.95rem;">${site.name}</strong><br>
-      <span style="font-size:0.8rem;color:#574F47;">${site.category || site.categoryName || ""}</span><br>
-      <span style="font-size:0.8rem;">★ ${(site.rating || 0).toFixed(1)} ${distText ? "· " + distText : ""}</span><br>
-      <a href="detail.html?slug=${site.slug}"
-         style="font-size:0.82rem;font-weight:600;color:#6E1E24;text-decoration:none;">View details →</a>
-    </div>`;
+function mapCategoryColor(category) {
+    return CATEGORY_COLORS[category] || "#6E1E24";
 }
 
-function renderMarkers(filterCategory) {
-    // Remove existing markers from map
-    allMarkersData.forEach(({ marker }) => marker.setMap(null));
-    allMarkersData = [];
+function mapStatus(message, isError = false) {
+    const status = document.getElementById("mapStatus");
+    if (status) {
+        status.textContent = message;
+        status.classList.toggle("text-danger", isError);
+    }
+}
 
-    const sites = getAllSites().filter(
-        (s) => !filterCategory || s.category === filterCategory || s.categoryName === filterCategory
-    );
+function mapPopup(site, distanceText) {
+    const container = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = site.name;
+    const category = document.createElement("div");
+    category.className = "small text-charcoal-soft";
+    category.textContent = site.category;
+    const rating = document.createElement("div");
+    rating.className = "small";
+    rating.textContent = `★ ${Number(site.rating || 0).toFixed(1)}${distanceText ? ` · ${distanceText}` : ""}`;
+    const link = document.createElement("a");
+    link.href = `detail.html?slug=${encodeURIComponent(site.slug)}`;
+    link.className = "small fw-semibold";
+    link.textContent = "View details";
+    container.append(title, category, rating, link);
+    return container;
+}
 
-    const infoWindow = new google.maps.InfoWindow();
-    if (currentInfoWindow) currentInfoWindow.close();
-    currentInfoWindow = infoWindow;
-
-    sites.forEach((site) => {
-        const cat = site.category || site.categoryName;
-        const color = categoryColor(cat);
-
-        const marker = new google.maps.Marker({
-            position: { lat: site.latitude, lng: site.longitude },
-            map,
-            title: site.name,
-            icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 9,
-                fillColor: color,
-                fillOpacity: 0.95,
-                strokeColor: "#ffffff",
-                strokeWeight: 2
-            }
-        });
-
-        const origin = currentUserLoc
-            ? { latitude: currentUserLoc.lat, longitude: currentUserLoc.lng }
-            : { latitude: AHMEDABAD_CENTRE.lat, longitude: AHMEDABAD_CENTRE.lng };
-        const distKm = distanceKm(origin.latitude, origin.longitude, site.latitude, site.longitude);
-        const distText = currentUserLoc ? distKm.toFixed(1) + " km away" : "";
-
-        marker.addListener("click", () => {
-            infoWindow.setContent(popupHTML(site, distText));
-            infoWindow.open(map, marker);
-        });
-
-        allMarkersData.push({ marker, site });
+function createMapMarker(site) {
+    const markerColor = mapCategoryColor(site.category);
+    const icon = L.divIcon({
+        className: "hx-map-marker",
+        html: `<span style="--marker-color:${markerColor}" aria-hidden="true"></span>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
     });
-
-    renderNearbyList(sites);
+    const marker = L.marker([site.latitude, site.longitude], {
+        icon,
+        title: site.name,
+        alt: site.name,
+        keyboard: true,
+        riseOnHover: true
+    });
+    const origin = userLocation || { lat: AHMEDABAD_CENTRE[0], lng: AHMEDABAD_CENTRE[1] };
+    const distance = distanceKm(origin.lat, origin.lng, site.latitude, site.longitude);
+    marker.bindPopup(mapPopup(site, userLocation ? `${distance.toFixed(1)} km away` : ""));
+    activeMarkers.set(Number(site.id), marker);
+    return marker;
 }
 
 function renderNearbyList(sites) {
-    const origin = currentUserLoc
-        ? { latitude: currentUserLoc.lat, longitude: currentUserLoc.lng }
-        : { latitude: AHMEDABAD_CENTRE.lat, longitude: AHMEDABAD_CENTRE.lng };
-
-    const withDist = sites.map((s) => ({
-        s,
-        d: distanceKm(origin.latitude, origin.longitude, s.latitude, s.longitude)
-    }));
-    withDist.sort((a, b) => a.d - b.d);
-
     const list = document.getElementById("nearbyList");
-    if (!list) return;
+    const origin = userLocation || { lat: AHMEDABAD_CENTRE[0], lng: AHMEDABAD_CENTRE[1] };
+    const ordered = sites.map((site) => ({
+        site,
+        distance: distanceKm(origin.lat, origin.lng, site.latitude, site.longitude)
+    })).sort((a, b) => a.distance - b.distance).slice(0, 10);
 
-    list.innerHTML = withDist.slice(0, 10).map(({ s, d }) => `
-    <div class="d-flex align-items-center gap-2 py-2 border-bottom">
-      <img src="${s.image}" alt="" style="width:52px;height:52px;object-fit:cover;border-radius:8px;"
-        onerror="this.style.display='none'">
-      <div class="flex-grow-1">
-        <div class="small fw-semibold">${s.name}</div>
-        <div class="small text-charcoal-soft">${s.category || s.categoryName || ""} · ${d.toFixed(1)} km</div>
-      </div>
-      <button class="btn btn-sm btn-outline-maroon" data-lat="${s.latitude}" data-lng="${s.longitude}"
-        data-name="${s.name}" aria-label="Go to ${s.name}">
-        <i class="bi bi-geo"></i>
-      </button>
-    </div>`).join("");
+    if (!ordered.length) {
+        list.innerHTML = `<p class="small text-charcoal-soft mb-0">No verified sites match this category.</p>`;
+        return;
+    }
 
-    list.querySelectorAll("button[data-lat]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            map.panTo({ lat: Number(btn.dataset.lat), lng: Number(btn.dataset.lng) });
-            map.setZoom(16);
+    list.replaceChildren();
+    ordered.forEach(({ site, distance }) => {
+        const row = document.createElement("div");
+        row.className = "d-flex align-items-center gap-2 py-2 border-bottom";
+        const image = document.createElement("img");
+        image.src = site.image;
+        image.alt = "";
+        image.loading = "lazy";
+        image.width = 52;
+        image.height = 52;
+        image.className = "rounded-2 object-fit-cover";
+        image.addEventListener("error", () => image.remove(), { once: true });
+        const text = document.createElement("div");
+        text.className = "flex-grow-1";
+        const name = document.createElement("div");
+        name.className = "small fw-semibold";
+        name.textContent = site.name;
+        const description = document.createElement("div");
+        description.className = "small text-charcoal-soft";
+        description.textContent = `${site.category} · ${distance.toFixed(1)} km`;
+        text.append(name, description);
+        const focusButton = document.createElement("button");
+        focusButton.type = "button";
+        focusButton.className = "btn btn-sm btn-outline-maroon";
+        focusButton.setAttribute("aria-label", `Show ${site.name} on map`);
+        focusButton.innerHTML = `<i class="bi bi-geo" aria-hidden="true"></i>`;
+        focusButton.addEventListener("click", () => {
+            const marker = activeMarkers.get(Number(site.id));
+            if (!marker) return;
+            heritageMap.setView(marker.getLatLng(), 16);
+            marker.openPopup();
         });
+        row.append(image, text, focusButton);
+        list.appendChild(row);
     });
 }
 
-function setUserLocation(lat, lng, label) {
-    currentUserLoc = { lat, lng };
+function renderMarkers(category = "") {
+    activeMarkers.forEach((marker) => marker.remove());
+    activeMarkers.clear();
+    const matchingSites = heritageSites.filter((site) =>
+        !category || site.category === category
+    );
+    matchingSites.forEach((site) => createMapMarker(site).addTo(heritageMap));
+    renderNearbyList(matchingSites);
+    mapStatus(matchingSites.length
+        ? `Showing ${matchingSites.length} verified heritage site${matchingSites.length === 1 ? "" : "s"}.`
+        : "No verified sites match this category.");
+}
 
-    if (userMarker) userMarker.setMap(null);
-    userMarker = new google.maps.Marker({
-        position: { lat, lng },
-        map,
-        title: label || "Your location",
-        icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: "#2563EB",
-            fillOpacity: 1,
-            strokeColor: "#ffffff",
-            strokeWeight: 3
-        },
-        zIndex: 999
+function showUserLocation(latitude, longitude) {
+    userLocation = { lat: latitude, lng: longitude };
+    const locationIcon = L.divIcon({
+        className: "hx-map-location",
+        html: `<span aria-hidden="true"></span>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
     });
+    if (userLocationMarker) userLocationMarker.remove();
+    userLocationMarker = L.marker([latitude, longitude], {
+        icon: locationIcon,
+        title: "Your current location",
+        alt: "Your current location",
+        keyboard: true,
+        zIndexOffset: 1000
+    }).addTo(heritageMap);
+    heritageMap.setView([latitude, longitude], 14);
+    const category = document.getElementById("mapCategoryFilter").value;
+    renderMarkers(category);
+    mapStatus("Your location is shown. Nearby distances are approximate.");
+}
 
-    const iw = new google.maps.InfoWindow({ content: `<strong>${label || "Your location"}</strong>` });
-    iw.open(map, userMarker);
-    map.panTo({ lat, lng });
-    map.setZoom(14);
+async function loadHeritageSites() {
+    const container = document.getElementById("map");
+    const retry = document.getElementById("retryMapSites");
+    if (retry) retry.remove();
+    container.setAttribute("aria-busy", "true");
+    mapStatus("Loading verified heritage sites…");
 
-    const catSelect = document.getElementById("mapCategoryFilter");
-    renderMarkers(catSelect ? catSelect.value : "");
-
-    if (typeof showToast === "function") {
-        showToast("Location found", "bi-crosshair", label || "Your current location");
+    try {
+        const [catalogue, categories] = await Promise.all([
+            api.getSites({ page: 1, limit: 50 }),
+            api.getCategories()
+        ]);
+        heritageSites = catalogue.data.filter((site) =>
+            Number.isFinite(Number(site.latitude)) && Number.isFinite(Number(site.longitude))
+        );
+        const categorySelect = document.getElementById("mapCategoryFilter");
+        categorySelect.replaceChildren(new Option("All categories", ""));
+        categories.forEach((category) => {
+            const option = document.createElement("option");
+            option.value = category.name;
+            option.textContent = `${category.name} (${category.siteCount})`;
+            categorySelect.appendChild(option);
+        });
+        renderMarkers(categorySelect.value);
+    } catch (error) {
+        mapStatus(`${error.message} The map is unavailable; please retry.`, true);
+        const retryButton = document.createElement("button");
+        retryButton.id = "retryMapSites";
+        retryButton.type = "button";
+        retryButton.className = "btn btn-outline-maroon btn-sm mt-2";
+        retryButton.textContent = "Retry loading sites";
+        retryButton.addEventListener("click", loadHeritageSites);
+        document.getElementById("nearbyList").replaceChildren(retryButton);
+    } finally {
+        container.setAttribute("aria-busy", "false");
     }
 }
 
-// Called by Google Maps script callback=initHeritageMap
-function initHeritageMap() {
-    map = new google.maps.Map(document.getElementById("map"), {
-        center: AHMEDABAD_CENTRE,
-        zoom: 14,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: true,
-        styles: [
-            { featureType: "poi", stylers: [{ visibility: "simplified" }] },
-            { featureType: "transit", stylers: [{ visibility: "off" }] }
-        ]
+async function initializeHeritageMap() {
+    const container = document.getElementById("map");
+    const locateButton = document.getElementById("locateBtn");
+    if (!window.L) {
+        container.setAttribute("aria-busy", "false");
+        mapStatus("The map library could not be loaded. Check your connection. The nearby site list remains available.", true);
+        document.getElementById("nearbyList").textContent =
+            "Map interaction is unavailable because the map library did not load.";
+        return;
+    }
+
+    heritageMap = L.map(container, {
+        scrollWheelZoom: false,
+        keyboard: true
+    }).setView(AHMEDABAD_CENTRE, 14);
+    const tiles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(heritageMap);
+    tiles.on("tileerror", () => {
+        if (tileErrorReported) return;
+        tileErrorReported = true;
+        mapStatus("Map tiles could not be loaded. The nearby site list is still available.", true);
+    });
+    const categorySelect = document.getElementById("mapCategoryFilter");
+    categorySelect.addEventListener("change", () => renderMarkers(categorySelect.value));
+    locateButton.addEventListener("click", () => {
+        if (!navigator.geolocation) {
+            mapStatus("Location is not supported by this browser. You can still browse the map.", true);
+            return;
+        }
+        locateButton.disabled = true;
+        locateButton.innerHTML = `<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Locating…`;
+        locateButton.setAttribute("aria-busy", "true");
+        mapStatus("Requesting your location…");
+        navigator.geolocation.getCurrentPosition((position) => {
+            locateButton.disabled = false;
+            locateButton.innerHTML = `<i class="bi bi-crosshair me-1" aria-hidden="true"></i>My location`;
+            locateButton.removeAttribute("aria-busy");
+            showUserLocation(position.coords.latitude, position.coords.longitude);
+        }, (error) => {
+            locateButton.disabled = false;
+            locateButton.innerHTML = `<i class="bi bi-crosshair me-1" aria-hidden="true"></i>My location`;
+            locateButton.removeAttribute("aria-busy");
+            const message = error.code === error.PERMISSION_DENIED
+                ? "Location access was denied. Allow location in your browser settings and try again."
+                : error.code === error.POSITION_UNAVAILABLE
+                    ? "Your location is currently unavailable. You can still browse the map."
+                    : "Location lookup timed out. Please try again.";
+            mapStatus(message, true);
+        }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
     });
 
-    const catSelect = document.getElementById("mapCategoryFilter");
-    if (catSelect) {
-        getCategories().forEach((c) => {
-            const opt = document.createElement("option");
-            opt.value = c;
-            opt.textContent = c;
-            catSelect.appendChild(opt);
-        });
-        catSelect.addEventListener("change", () => renderMarkers(catSelect.value));
-    }
-
-    // Locate button
-    const locateBtn = document.getElementById("locateBtn");
-    if (locateBtn) {
-        locateBtn.addEventListener("click", () => {
-            if (!navigator.geolocation) {
-                if (typeof showToast === "function") {
-                    showToast("Not supported", "bi-exclamation-triangle", "Your browser does not support geolocation.");
-                }
-                return;
-            }
-            locateBtn.disabled = true;
-            locateBtn.innerHTML = `<i class="bi bi-arrow-repeat me-1"></i>Locating…`;
-
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    locateBtn.disabled = false;
-                    locateBtn.innerHTML = `<i class="bi bi-crosshair me-1"></i>My location`;
-                    setUserLocation(pos.coords.latitude, pos.coords.longitude, "Your current location");
-                },
-                (err) => {
-                    locateBtn.disabled = false;
-                    locateBtn.innerHTML = `<i class="bi bi-crosshair me-1"></i>My location`;
-                    let msg = "Unable to get your location.";
-                    if (err.code === 1) msg = "Location access denied. Please allow it in your browser.";
-                    if (typeof showToast === "function") {
-                        showToast("Location error", "bi-exclamation-triangle", msg);
-                    }
-                },
-                { timeout: 10000, maximumAge: 60000 }
-            );
-        });
-    }
-
-    renderMarkers("");
+    await loadHeritageSites();
 }
+
+document.addEventListener("DOMContentLoaded", initializeHeritageMap);

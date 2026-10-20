@@ -38,6 +38,12 @@ function lsSet(key, value) {
     }
 }
 
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[char]);
+}
+
 /* ---------------------------
    Detail page URL helper
    --------------------------- */
@@ -62,24 +68,55 @@ function getBookmarks() {
 }
 
 function isBookmarked(siteId) {
-    return getBookmarks().includes(Number(siteId));
+    const marks = window.HX_AUTH_USER && Array.isArray(window.HX_SAVED_IDS)
+        ? window.HX_SAVED_IDS
+        : getBookmarks();
+    return marks.includes(Number(siteId));
 }
 
-function toggleBookmark(siteId) {
+function refreshSavedUI() {
+    document.querySelectorAll("[data-site-id]").forEach((button) => {
+        const saved = isBookmarked(button.dataset.siteId);
+        button.classList.toggle("active", saved);
+        button.setAttribute("aria-pressed", String(saved));
+        const icon = button.querySelector("i");
+        if (icon) icon.className = `bi ${saved ? "bi-bookmark-fill" : "bi-bookmark"}`;
+    });
+    const count = window.HX_AUTH_USER && Array.isArray(window.HX_SAVED_IDS)
+        ? window.HX_SAVED_IDS.length
+        : getBookmarks().length;
+    document.querySelectorAll(".saved-count-badge").forEach((badge) => {
+        badge.textContent = count;
+        badge.style.display = count ? "inline-flex" : "none";
+    });
+}
+
+async function toggleBookmark(siteId) {
     siteId = Number(siteId);
 
-    let marks = getBookmarks();
-    let added;
+    let marks = window.HX_AUTH_USER && Array.isArray(window.HX_SAVED_IDS)
+        ? [...window.HX_SAVED_IDS]
+        : getBookmarks();
+    const added = !marks.includes(siteId);
 
-    if (marks.includes(siteId)) {
-        marks = marks.filter((id) => id !== siteId);
-        added = false;
-    } else {
-        marks.push(siteId);
-        added = true;
+    if (window.HX_AUTH_USER && window.api) {
+        try {
+            if (added) await api.post(`/saved/${siteId}`, {});
+            else await api.delete(`/saved/${siteId}`);
+        } catch (error) {
+            showToast(error.message || "Could not update saved places.", "bi-exclamation-circle");
+            return !added;
+        }
     }
 
-    lsSet(LS_KEYS.bookmarks, marks);
+    if (!added) {
+        marks = marks.filter((id) => id !== siteId);
+    } else {
+        marks.push(siteId);
+    }
+
+    if (window.HX_AUTH_USER) window.HX_SAVED_IDS = marks;
+    else lsSet(LS_KEYS.bookmarks, marks);
 
     const site =
         typeof getSiteById === "function"
@@ -93,7 +130,7 @@ function toggleBookmark(siteId) {
     );
 
     document
-        .querySelectorAll(`.bookmark-btn[data-site-id="${siteId}"]`)
+        .querySelectorAll(`[data-site-id="${siteId}"]`)
         .forEach((btn) => {
             btn.classList.toggle("active", added);
             btn.setAttribute("aria-pressed", added ? "true" : "false");
@@ -109,13 +146,66 @@ function toggleBookmark(siteId) {
     document
         .querySelectorAll(".saved-count-badge")
         .forEach((el) => {
-            const count = getBookmarks().length;
+            const count = window.HX_AUTH_USER && Array.isArray(window.HX_SAVED_IDS)
+                ? window.HX_SAVED_IDS.length
+                : getBookmarks().length;
 
             el.textContent = count;
             el.style.display = count > 0 ? "inline-flex" : "none";
         });
 
     return added;
+}
+
+async function hxAddSiteToTrip(siteId) {
+    siteId = Number(siteId);
+    const items = lsGet(LS_KEYS.itinerary, []);
+    if (window.HX_AUTH_USER && window.api) {
+        try {
+            await api.post("/itineraries/merge", {
+                title: "My Ahmedabad Heritage Day",
+                stops: [{ siteId }]
+            });
+            showToast("Saved to your account itinerary", "bi-map");
+            return true;
+        } catch (error) {
+            showToast(error.message || "Could not save this stop to your account.", "bi-exclamation-circle");
+            return false;
+        }
+    }
+    if (!items.some((item) => Number(item.siteId) === siteId)) {
+        items.push({ siteId, time: "" });
+        lsSet(LS_KEYS.itinerary, items);
+    }
+    showToast("Added to your trip", "bi-map");
+    return true;
+}
+
+async function hxMigrateGuestData() {
+    if (!window.HX_AUTH_USER || !window.api) return;
+    const bookmarks = getBookmarks();
+    if (bookmarks.length) {
+        await api.post("/saved/merge", { siteIds: bookmarks });
+        lsSet(LS_KEYS.bookmarks, []);
+    }
+    const localTrip = lsGet(LS_KEYS.itinerary, []);
+    if (localTrip.length) {
+        const meta = lsGet("heritagex_saved_itinerary_meta", {});
+        const notes = JSON.stringify({
+            date: meta.date || "",
+            start: meta.start || "",
+            hours: meta.hours || ""
+        });
+        await api.post("/itineraries/merge", {
+            title: "My Ahmedabad Heritage Day",
+            notes,
+            stops: localTrip.map((item) => ({
+                siteId: Number(item.siteId),
+                ...(item.time ? { visitTime: String(item.time) } : {})
+            }))
+        });
+        lsSet(LS_KEYS.itinerary, []);
+    }
 }
 
 /* ---------------------------
@@ -156,13 +246,13 @@ function showToast(
 
             <div class="me-3">
                 <div style="font-weight:600;font-size:0.92rem;">
-                    ${title}
+                    ${escapeHTML(title)}
                 </div>
 
                 ${subtitle
             ? `
                             <div style="font-size:0.78rem;opacity:0.75;">
-                                ${subtitle}
+                                ${escapeHTML(subtitle)}
                             </div>
                         `
             : ""
@@ -203,6 +293,10 @@ function siteCardHTML(site, opts = {}) {
     */
 
     const detailUrl = getDetailUrl(site.slug);
+    const name = escapeHTML(site.name);
+    const category = escapeHTML(site.category);
+    const image = escapeHTML(site.image);
+    const description = escapeHTML(site.shortDescription);
 
     const distance =
         opts.distanceKm != null
@@ -238,21 +332,21 @@ function siteCardHTML(site, opts = {}) {
             <div class="card-img-wrap">
                 <a href="${detailUrl}">
                     <img
-                        src="${site.image}"
-                        alt="${site.name}"
+                        src="${image}"
+                        alt="${name}"
                         loading="lazy"
                     >
                 </a>
 
                 <span class="card-cat-badge">
-                    ${site.category}
+                    ${category}
                 </span>
 
                 <button
                     class="bookmark-btn ${bookmarked ? "active" : ""}"
                     data-site-id="${site.id}"
                     aria-pressed="${bookmarked}"
-                    aria-label="Save ${site.name} to your places"
+                    aria-label="Save ${name} to your places"
                     onclick="toggleBookmark(${site.id})"
                 >
                     <i
@@ -265,12 +359,12 @@ function siteCardHTML(site, opts = {}) {
             <div class="card-body-custom">
                 <h3 class="h5">
                     <a href="${detailUrl}" class="text-maroon">
-                        ${site.name}
+                        ${name}
                     </a>
                 </h3>
 
                 <p class="text-charcoal-soft small mb-2">
-                    ${site.shortDescription}
+                    ${description}
                 </p>
 
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -280,7 +374,7 @@ function siteCardHTML(site, opts = {}) {
             ? `
                                 <span class="rating-pill">
                                     <i class="bi bi-clock"></i>
-                                    ${site.duration}
+                                    ${escapeHTML(site.duration)}
                                 </span>
                             `
             : ""
@@ -353,10 +447,55 @@ document.addEventListener("DOMContentLoaded", () => {
     document
         .querySelectorAll(".saved-count-badge")
         .forEach((el) => {
-            const count = getBookmarks().length;
+            const count = window.HX_AUTH_USER && Array.isArray(window.HX_SAVED_IDS)
+                ? window.HX_SAVED_IDS.length
+                : getBookmarks().length;
 
             el.textContent = count;
             el.style.display =
                 count > 0 ? "inline-flex" : "none";
         });
+
+    document.querySelectorAll(".dropdown-menu").forEach((menu) => {
+        if (menu.querySelector("[data-hx-account-link]")) return;
+        const account = document.createElement("li");
+        const accountHref = window.location.pathname.toLowerCase().includes("/pages/")
+            ? "account.html"
+            : "Pages/account.html";
+        account.innerHTML = `<a class="dropdown-item" data-hx-account-link href="${accountHref}"><i class="bi bi-person me-2"></i>Sign in / Create account</a>`;
+        menu.appendChild(account);
+    });
+
+    if (window.api) {
+        window.hxAuthReady = api.get("/auth/me").then(async (result) => {
+            const user = result?.user || null;
+            api.setCurrentUser(user);
+            if (user) {
+                try {
+                    await hxMigrateGuestData();
+                } catch (error) {
+                    showToast(error.message || "Guest data could not be synced yet; it remains on this device.", "bi-exclamation-circle");
+                }
+                try {
+                    const savedSites = await api.get("/saved");
+                    window.HX_SAVED_IDS = savedSites.map((site) => Number(site.id));
+                    refreshSavedUI();
+                } catch (error) {
+                    console.error("Unable to load account saved places:", error);
+                }
+            }
+            document.querySelectorAll("[data-hx-account-link]").forEach((link) => {
+                link.innerHTML = user
+                    ? `<i class="bi bi-person-check me-2"></i>${escapeHTML(user.name || user.email)}`
+                    : `<i class="bi bi-person me-2"></i>Sign in / Create account`;
+            });
+            return user;
+        }).catch((error) => {
+            api.setCurrentUser(null);
+            if (error.status !== 401 && error.code !== "NETWORK_ERROR") {
+                console.error("Unable to restore the visitor session:", error);
+            }
+            return null;
+        });
+    }
 });

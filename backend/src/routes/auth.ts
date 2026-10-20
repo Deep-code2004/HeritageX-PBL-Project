@@ -87,7 +87,6 @@ authRouter.post("/register", async (req: Request, res: Response): Promise<any> =
     res,
     {
       user,
-      accessToken,
     },
     undefined,
     201
@@ -185,7 +184,6 @@ authRouter.post("/login", async (req: Request, res: Response): Promise<any> => {
       email: user.email,
       role: user.role,
     },
-    accessToken,
   });
 });
 
@@ -271,13 +269,12 @@ authRouter.post("/admin/login", async (req: Request, res: Response): Promise<any
       email: user.email,
       role: user.role,
     },
-    accessToken,
   });
 });
 
 // POST /api/auth/refresh
 authRouter.post("/refresh", async (req: Request, res: Response): Promise<any> => {
-  const token = req.cookies?.hx_refresh_token || req.body?.refreshToken;
+  const token = req.cookies?.hx_refresh_token;
 
   if (!token) {
     return sendError(res, "MISSING_REFRESH_TOKEN", "Refresh token is required", undefined, 401);
@@ -326,22 +323,31 @@ authRouter.post("/refresh", async (req: Request, res: Response): Promise<any> =>
 
   setAuthCookies(res, newAccessToken, newRefreshToken);
 
-  return sendSuccess(res, {
-    accessToken: newAccessToken,
-  });
+  return sendSuccess(res, { message: "Session refreshed" });
 });
 
 // POST /api/auth/logout
 authRouter.post("/logout", async (req: Request, res: Response): Promise<any> => {
-  const token = req.cookies?.hx_refresh_token || req.body?.refreshToken;
+  const token = req.cookies?.hx_refresh_token;
   if (token) {
     const tokenHash = hashToken(token);
-    await prisma.refreshToken
-      .updateMany({
+    try {
+      await prisma.refreshToken.updateMany({
         where: { tokenHash, revokedAt: null },
         data: { revokedAt: new Date() },
-      })
-      .catch(() => {});
+      });
+    } catch (error) {
+      const errorName = error instanceof Error ? error.name : "Unknown error";
+      console.error("Failed to revoke refresh token during logout", errorName);
+      clearAuthCookies(res);
+      return sendError(
+        res,
+        "LOGOUT_INCOMPLETE",
+        "Unable to revoke the session. Please retry logout.",
+        undefined,
+        503
+      );
+    }
   }
 
   clearAuthCookies(res);

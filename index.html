@@ -14,6 +14,8 @@
         rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     <link rel="stylesheet" href="./styles/style.css">
 </head>
 
@@ -228,8 +230,9 @@
                     </div>
 
                     <div class="col-lg-7 order-lg-1">
-                        <div id="homeMapPreview" style="height:360px;"
-                            aria-label="Preview map of Ahmedabad heritage sites"></div>
+                        <div id="homeMapPreview" class="hx-map" style="height:360px;" role="region"
+                            aria-label="Preview map of Ahmedabad heritage sites" aria-busy="true"></div>
+                        <p id="homeMapStatus" class="map-status" role="status">Loading heritage map preview…</p>
                     </div>
                 </div>
             </div>
@@ -378,10 +381,13 @@
     <footer class="hx-footer py-5" id="siteFooter"></footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBkIuVBKqiEELLO9YJz5QDGablVhVyib-0" async defer></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <script src="./js/data.js"></script>
-    <script src="./js/main.js"></script>
+    <script src="./js/runtime-config.js"></script>
+    <script src="./js/api.js"></script>
+    <script src="./js/main.js?v=api-persistence"></script>
     <script src="./js/footer.js"></script>
 
     <script>
@@ -546,34 +552,38 @@
                 `)
                 .join("");
 
-        const map = L.map("homeMapPreview", {
-            scrollWheelZoom: false
-        }).setView([23.028, 72.585], 13.2);
-
-        L.tileLayer(
-            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            {
-                attribution: "&copy; OpenStreetMap contributors"
-            }
-        ).addTo(map);
-
-        getAllSites()
-            .slice(0, 10)
-            .forEach((site) => {
-                L.circleMarker(
-                    [site.latitude, site.longitude],
-                    {
-                        radius: 7,
-                        color: "#6E1E24",
-                        fillColor: "#C17A45",
-                        fillOpacity: 0.9
-                    }
-                )
-                    .addTo(map)
-                    .bindPopup(
-                        `<strong>${site.name}</strong><br>${site.category}`
-                    );
+        const mapContainer = document.getElementById("homeMapPreview");
+        const mapStatus = document.getElementById("homeMapStatus");
+        if (!window.L) {
+            mapContainer.setAttribute("aria-busy", "false");
+            mapStatus.textContent = "The map preview could not be loaded. Explore all places using the full map.";
+        } else {
+            const map = L.map(mapContainer, { scrollWheelZoom: false, keyboard: true })
+                .setView([23.028, 72.585], 13.2);
+            const tiles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            tiles.once("tileerror", () => {
+                mapStatus.textContent = "Map tiles could not be loaded. Open the full map to see the heritage site list.";
             });
+            getAllSites().slice(0, 10).forEach((site) => {
+                const marker = L.circleMarker([site.latitude, site.longitude], {
+                    radius: 7,
+                    color: "#6E1E24",
+                    fillColor: "#C17A45",
+                    fillOpacity: 0.9
+                }).addTo(map);
+                const popup = document.createElement("div");
+                const name = document.createElement("strong");
+                name.textContent = site.name;
+                const category = document.createElement("div");
+                category.textContent = site.category;
+                popup.append(name, category);
+                marker.bindPopup(popup);
+            });
+            mapContainer.setAttribute("aria-busy", "false");
+            mapStatus.textContent = "Interactive map preview. Open the full map for category filters and nearby site details.";
+        }
     </script>
 
 </body>

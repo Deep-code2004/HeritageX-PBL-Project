@@ -76,6 +76,48 @@ savedRouter.get("/", async (req: Request, res: Response): Promise<any> => {
   return sendSuccess(res, saved.map((s) => s.site));
 });
 
+// POST /api/saved/merge (Merges guest localStorage saved sites upon login)
+savedRouter.post("/merge", async (req: Request, res: Response): Promise<any> => {
+  const result = z.object({
+    siteIds: z.array(z.number().int().positive()).max(100),
+  }).safeParse(req.body);
+  if (!result.success) {
+    return sendError(res, "VALIDATION_ERROR", "siteIds must contain at most 100 positive integers", result.error.errors, 422);
+  }
+
+  const validIds = [...new Set(result.data.siteIds)];
+  const existingSites = await prisma.heritageSite.findMany({
+    where: { id: { in: validIds } },
+    select: { id: true },
+  });
+
+  for (const { id: siteId } of existingSites) {
+    await prisma.savedPlace.upsert({
+      where: {
+        userId_siteId: {
+          userId: req.user!.userId,
+          siteId,
+        },
+      },
+      update: {},
+      create: {
+        userId: req.user!.userId,
+        siteId,
+      },
+    });
+  }
+
+  const allSaved = await prisma.savedPlace.findMany({
+    where: { userId: req.user!.userId },
+    include: { site: true },
+  });
+
+  return sendSuccess(res, {
+    mergedCount: existingSites.length,
+    savedSites: allSaved.map((savedPlace) => savedPlace.site),
+  });
+});
+
 // POST /api/saved/:siteId (idempotent save)
 savedRouter.post("/:siteId", async (req: Request, res: Response): Promise<any> => {
   const siteId = parseInt(String(req.params.siteId), 10);
@@ -122,49 +164,6 @@ savedRouter.delete("/:siteId", async (req: Request, res: Response): Promise<any>
   return sendSuccess(res, { message: "Site removed from saved places", siteId });
 });
 
-// POST /api/saved/merge (Merges guest localStorage saved sites upon login)
-savedRouter.post("/merge", async (req: Request, res: Response): Promise<any> => {
-  const { siteIds } = req.body;
-  if (!Array.isArray(siteIds)) {
-    return sendError(res, "INVALID_BODY", "siteIds must be an array of integers");
-  }
-
-  const validIds = siteIds.map((id) => Number(id)).filter((id) => !isNaN(id) && id > 0);
-
-  const existingSites = await prisma.heritageSite.findMany({
-    where: { id: { in: validIds } },
-    select: { id: true },
-  });
-
-  const existingIds = existingSites.map((s) => s.id);
-
-  for (const siteId of existingIds) {
-    await prisma.savedPlace.upsert({
-      where: {
-        userId_siteId: {
-          userId: req.user!.userId,
-          siteId,
-        },
-      },
-      update: {},
-      create: {
-        userId: req.user!.userId,
-        siteId,
-      },
-    });
-  }
-
-  const allSaved = await prisma.savedPlace.findMany({
-    where: { userId: req.user!.userId },
-    include: { site: true },
-  });
-
-  return sendSuccess(res, {
-    mergedCount: existingIds.length,
-    savedSites: allSaved.map((s) => s.site),
-  });
-});
-
 /* -------------------------------------------------------------
    3. ITINERARIES: /api/itineraries
 ------------------------------------------------------------- */
@@ -191,15 +190,76 @@ itineraryRouter.get("/", async (req: Request, res: Response): Promise<any> => {
 // POST /api/itineraries
 const createItinerarySchema = z.object({
   title: z.string().min(1, "Title is required").max(100),
-  notes: z.string().optional(),
+  notes: z.string().max(2000).optional(),
   stops: z
     .array(
       z.object({
         siteId: z.number().int(),
-        visitTime: z.string().optional(),
+        visitTime: z.string().max(20).optional(),
       })
     )
+    .max(100, "An itinerary cannot contain more than 100 stops")
     .default([]),
+});
+
+const mergeItinerarySchema = createItinerarySchema.extend({
+  title: z.string().min(1).max(100).default("My Ahmedabad Heritage Day"),
+});
+
+itineraryRouter.post("/merge", async (req: Request, res: Response): Promise<any> => {
+  const result = mergeItinerarySchema.safeParse(req.body);
+  if (!result.success) {
+    return sendError(res, "VALIDATION_ERROR", "Invalid itinerary payload", result.error.errors, 422);
+  }
+
+  const userId = req.user!.userId;
+  const existing = await prisma.itinerary.findFirst({
+    where: { userId, title: result.data.title },
+    orderBy: { updatedAt: "desc" },
+    include: { stops: { orderBy: { position: "asc" } } },
+  });
+  const bySite = new Map<number, { siteId: number; visitTime?: string }>();
+  existing?.stops.forEach((stop) => bySite.set(stop.siteId, {
+    siteId: stop.siteId,
+    ...(stop.visitTime ? { visitTime: stop.visitTime } : {}),
+  }));
+  result.data.stops.forEach((stop) => {
+    if (!bySite.has(stop.siteId)) bySite.set(stop.siteId, stop);
+  });
+  const stops = [...bySite.values()];
+
+  const itinerary = existing
+    ? await prisma.itinerary.update({
+      where: { id: existing.id },
+      data: {
+        stops: {
+          deleteMany: {},
+          create: stops.map((stop, position) => ({
+            siteId: stop.siteId,
+            position,
+            ...(stop.visitTime ? { visitTime: stop.visitTime } : {}),
+          })),
+        },
+      },
+      include: { stops: { orderBy: { position: "asc" }, include: { site: true } } },
+    })
+    : await prisma.itinerary.create({
+      data: {
+        userId,
+        title: result.data.title,
+        notes: result.data.notes,
+        stops: {
+          create: stops.map((stop, position) => ({
+            siteId: stop.siteId,
+            position,
+            ...(stop.visitTime ? { visitTime: stop.visitTime } : {}),
+          })),
+        },
+      },
+      include: { stops: { orderBy: { position: "asc" }, include: { site: true } } },
+    });
+
+  return sendSuccess(res, itinerary);
 });
 
 itineraryRouter.post("/", async (req: Request, res: Response): Promise<any> => {
