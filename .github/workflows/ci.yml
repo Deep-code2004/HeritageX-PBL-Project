@@ -42,7 +42,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npm run prisma:generate
-      - run: npx prisma db push
+      - run: npm run prisma:deploy
       - run: npm run prisma:seed
       - run: npm run build
       - run: npm test

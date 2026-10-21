@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           <h2 class="h4 mt-4">Location &amp; nearby</h2>
           <div id="detailMap" style="height:320px;" class="mb-3 hx-map" role="region"
             aria-label="Map showing ${safe(site.name)} and nearby heritage sites" aria-busy="true"></div>
-          <p id="detailMapStatus" class="map-status" role="status">Loading location map…</p>
+          <p id="detailMapStatus" class="map-status" role="status" data-google-maps-status>Loading location map…</p>
           ${nearby.length ? `<h2 class="h4 mt-4">Explore nearby</h2><div class="row g-3">${nearby.map((item) => `<div class="col-md-4">${siteCardHTML(item)}</div>`).join("")}</div>` : ""}
           <h2 class="h4 mt-5">Reviews</h2>
           <div class="d-flex align-items-center gap-3 mb-3">
@@ -174,6 +174,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("reviewForm").addEventListener("submit", async (event) => {
         event.preventDefault();
+        const form = event.currentTarget;
         const message = document.getElementById("reviewMessage");
         const text = document.getElementById("reviewText").value.trim();
         if (selectedStar < 1 || text.length < 3) {
@@ -181,7 +182,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             message.className = "small mb-2 text-danger";
             return;
         }
-        const submit = event.currentTarget.querySelector('[type="submit"]');
+        const submit = form.querySelector('[type="submit"]');
         submit.disabled = true;
         message.textContent = "Submitting your review…";
         message.className = "small mb-2 text-charcoal-soft";
@@ -193,7 +194,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
             await api.post(`/heritage/${site.id}/reviews`, { rating: selectedStar, comment: text });
-            event.currentTarget.reset();
+            form.reset();
             selectedStar = 0;
             document.querySelectorAll(".star-btn").forEach((star) => {
                 star.style.color = "var(--sandstone)";
@@ -217,42 +218,51 @@ document.addEventListener("DOMContentLoaded", async () => {
     function initializeMap() {
         const container = document.getElementById("detailMap");
         const status = document.getElementById("detailMapStatus");
-        if (!window.L) {
-            status.textContent = "The map library could not be loaded. Use the directions button to open this location in Maps.";
+        window.hxGoogleMapsReady.then(() => {
+            const position = { lat: Number(site.latitude), lng: Number(site.longitude) };
+            if (!Number.isFinite(position.lat) || !Number.isFinite(position.lng)) {
+                throw new Error("This site's location coordinates are unavailable.");
+            }
+            const map = new google.maps.Map(container, {
+                center: position,
+                zoom: 15,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: true
+            });
+            const infoWindow = new google.maps.InfoWindow();
+            [site, ...nearby].forEach((place, index) => {
+                const placePosition = { lat: Number(place.latitude), lng: Number(place.longitude) };
+                if (!Number.isFinite(placePosition.lat) || !Number.isFinite(placePosition.lng)) return;
+                const marker = new google.maps.Marker({
+                    map,
+                    position: placePosition,
+                    title: place.name,
+                    label: index ? undefined : { text: "★", color: "#ffffff" }
+                });
+                marker.addListener("click", () => {
+                    const content = document.createElement("div");
+                    const title = document.createElement(index === 0 ? "strong" : "a");
+                    title.textContent = place.name;
+                    if (index > 0) title.href = `detail.html?slug=${encodeURIComponent(place.slug)}`;
+                    content.appendChild(title);
+                    infoWindow.setContent(content);
+                    infoWindow.open({ map, anchor: marker });
+                });
+                if (index === 0) {
+                    const content = document.createElement("strong");
+                    content.textContent = place.name;
+                    infoWindow.setContent(content);
+                    infoWindow.open({ map, anchor: marker });
+                }
+            });
+            container.setAttribute("aria-busy", "false");
+            status.textContent = "Interactive Google Map. Use the map controls to explore this site and nearby places.";
+        }).catch((error) => {
+            status.textContent = `${error.message} Use the directions button to open this location in Maps.`;
             status.classList.add("text-danger");
             container.setAttribute("aria-busy", "false");
-            return;
-        }
-        const map = L.map(container, { scrollWheelZoom: false, keyboard: true })
-            .setView([site.latitude, site.longitude], 15);
-        const tiles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-        tiles.once("tileerror", () => {
-            status.textContent = "Map tiles could not be loaded. Use the directions button to open this location in Maps.";
-            status.classList.add("text-danger");
-            container.setAttribute("aria-label", "Location map; map tiles could not be loaded");
         });
-        const places = [site, ...nearby];
-        places.forEach((place, index) => {
-            const marker = L.marker([place.latitude, place.longitude], {
-                title: place.name,
-                alt: place.name,
-                keyboard: true
-            }).addTo(map);
-            const content = document.createElement("div");
-            const title = document.createElement(index === 0 ? "strong" : "a");
-            title.textContent = place.name;
-            if (index > 0) {
-                title.href = `detail.html?slug=${encodeURIComponent(place.slug)}`;
-            }
-            content.appendChild(title);
-            if (index === 0) marker.bindPopup(content).openPopup();
-            else marker.bindPopup(content);
-        });
-        container.setAttribute("aria-busy", "false");
-        status.textContent = "Interactive location map. Use the marker controls to explore this site and nearby places.";
     }
     initializeMap();
 

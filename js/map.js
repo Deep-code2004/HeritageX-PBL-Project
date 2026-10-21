@@ -1,4 +1,4 @@
-/* Accessible Leaflet map backed by the public heritage catalogue API. */
+/* Google Maps discovery backed by the public heritage catalogue API. */
 const CATEGORY_COLORS = {
     "Historical Monuments": "#6E1E24",
     "Sultanate Heritage": "#C17A45",
@@ -8,13 +8,14 @@ const CATEGORY_COLORS = {
     "Markets": "#B5533C",
     "Living Heritage": "#8a3037"
 };
-const AHMEDABAD_CENTRE = [23.028, 72.585];
+const AHMEDABAD_CENTRE = { lat: 23.028, lng: 72.585 };
 let heritageMap;
 let userLocation;
 let heritageSites = [];
 let activeMarkers = new Map();
 let userLocationMarker;
-let tileErrorReported = false;
+let mapUnavailableReason = "";
+let infoWindow;
 
 function mapCategoryColor(category) {
     return CATEGORY_COLORS[category] || "#6E1E24";
@@ -23,8 +24,8 @@ function mapCategoryColor(category) {
 function mapStatus(message, isError = false) {
     const status = document.getElementById("mapStatus");
     if (status) {
-        status.textContent = message;
-        status.classList.toggle("text-danger", isError);
+        status.textContent = window.hxGoogleMapsError || message;
+        status.classList.toggle("text-danger", isError || Boolean(window.hxGoogleMapsError));
     }
 }
 
@@ -47,30 +48,32 @@ function mapPopup(site, distanceText) {
 }
 
 function createMapMarker(site) {
-    const markerColor = mapCategoryColor(site.category);
-    const icon = L.divIcon({
-        className: "hx-map-marker",
-        html: `<span style="--marker-color:${markerColor}" aria-hidden="true"></span>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
-    });
-    const marker = L.marker([site.latitude, site.longitude], {
-        icon,
+    const marker = new google.maps.Marker({
+        map: heritageMap,
+        position: { lat: Number(site.latitude), lng: Number(site.longitude) },
         title: site.name,
-        alt: site.name,
-        keyboard: true,
-        riseOnHover: true
+        icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: mapCategoryColor(site.category),
+            fillOpacity: 1,
+            strokeColor: "#ffffff",
+            strokeWeight: 2
+        }
     });
-    const origin = userLocation || { lat: AHMEDABAD_CENTRE[0], lng: AHMEDABAD_CENTRE[1] };
+    const origin = userLocation || AHMEDABAD_CENTRE;
     const distance = distanceKm(origin.lat, origin.lng, site.latitude, site.longitude);
-    marker.bindPopup(mapPopup(site, userLocation ? `${distance.toFixed(1)} km away` : ""));
+    marker.addListener("click", () => {
+        infoWindow.setContent(mapPopup(site, userLocation ? `${distance.toFixed(1)} km away` : ""));
+        infoWindow.open({ map: heritageMap, anchor: marker });
+    });
     activeMarkers.set(Number(site.id), marker);
     return marker;
 }
 
 function renderNearbyList(sites) {
     const list = document.getElementById("nearbyList");
-    const origin = userLocation || { lat: AHMEDABAD_CENTRE[0], lng: AHMEDABAD_CENTRE[1] };
+    const origin = userLocation || AHMEDABAD_CENTRE;
     const ordered = sites.map((site) => ({
         site,
         distance: distanceKm(origin.lat, origin.lng, site.latitude, site.longitude)
@@ -97,7 +100,10 @@ function renderNearbyList(sites) {
         text.className = "flex-grow-1";
         const name = document.createElement("div");
         name.className = "small fw-semibold";
-        name.textContent = site.name;
+        const detailLink = document.createElement("a");
+        detailLink.href = `detail.html?slug=${encodeURIComponent(site.slug)}`;
+        detailLink.textContent = site.name;
+        name.appendChild(detailLink);
         const description = document.createElement("div");
         description.className = "small text-charcoal-soft";
         description.textContent = `${site.category} · ${distance.toFixed(1)} km`;
@@ -109,9 +115,14 @@ function renderNearbyList(sites) {
         focusButton.innerHTML = `<i class="bi bi-geo" aria-hidden="true"></i>`;
         focusButton.addEventListener("click", () => {
             const marker = activeMarkers.get(Number(site.id));
-            if (!marker) return;
-            heritageMap.setView(marker.getLatLng(), 16);
-            marker.openPopup();
+            if (!marker || !heritageMap) {
+                mapStatus(mapUnavailableReason || "Map controls are unavailable.", true);
+                return;
+            }
+            heritageMap.setCenter(marker.getPosition());
+            heritageMap.setZoom(16);
+            infoWindow.setContent(mapPopup(site, ""));
+            infoWindow.open({ map: heritageMap, anchor: marker });
         });
         row.append(image, text, focusButton);
         list.appendChild(row);
@@ -119,35 +130,42 @@ function renderNearbyList(sites) {
 }
 
 function renderMarkers(category = "") {
-    activeMarkers.forEach((marker) => marker.remove());
+    activeMarkers.forEach((marker) => marker.setMap(null));
     activeMarkers.clear();
     const matchingSites = heritageSites.filter((site) =>
         !category || site.category === category
     );
-    matchingSites.forEach((site) => createMapMarker(site).addTo(heritageMap));
+    if (heritageMap) matchingSites.forEach(createMapMarker);
     renderNearbyList(matchingSites);
-    mapStatus(matchingSites.length
+    const summary = matchingSites.length
         ? `Showing ${matchingSites.length} verified heritage site${matchingSites.length === 1 ? "" : "s"}.`
-        : "No verified sites match this category.");
+        : "No verified sites match this category.";
+    mapStatus(mapUnavailableReason ? `${summary} ${mapUnavailableReason}` : summary, Boolean(mapUnavailableReason));
 }
 
 function showUserLocation(latitude, longitude) {
     userLocation = { lat: latitude, lng: longitude };
-    const locationIcon = L.divIcon({
-        className: "hx-map-location",
-        html: `<span aria-hidden="true"></span>`,
-        iconSize: [22, 22],
-        iconAnchor: [11, 11]
-    });
-    if (userLocationMarker) userLocationMarker.remove();
-    userLocationMarker = L.marker([latitude, longitude], {
-        icon: locationIcon,
+    if (!heritageMap) {
+        mapStatus(mapUnavailableReason || "Map controls are unavailable.", true);
+        return;
+    }
+    if (userLocationMarker) userLocationMarker.setMap(null);
+    userLocationMarker = new google.maps.Marker({
+        map: heritageMap,
+        position: { lat: latitude, lng: longitude },
         title: "Your current location",
-        alt: "Your current location",
-        keyboard: true,
-        zIndexOffset: 1000
-    }).addTo(heritageMap);
-    heritageMap.setView([latitude, longitude], 14);
+        icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 9,
+            fillColor: "#2769b0",
+            fillOpacity: 1,
+            strokeColor: "#ffffff",
+            strokeWeight: 3
+        },
+        zIndex: 1000
+    });
+    heritageMap.setCenter({ lat: latitude, lng: longitude });
+    heritageMap.setZoom(14);
     const category = document.getElementById("mapCategoryFilter").value;
     renderMarkers(category);
     mapStatus("Your location is shown. Nearby distances are approximate.");
@@ -194,32 +212,11 @@ async function loadHeritageSites() {
 async function initializeHeritageMap() {
     const container = document.getElementById("map");
     const locateButton = document.getElementById("locateBtn");
-    if (!window.L) {
-        container.setAttribute("aria-busy", "false");
-        mapStatus("The map library could not be loaded. Check your connection. The nearby site list remains available.", true);
-        document.getElementById("nearbyList").textContent =
-            "Map interaction is unavailable because the map library did not load.";
-        return;
-    }
-
-    heritageMap = L.map(container, {
-        scrollWheelZoom: false,
-        keyboard: true
-    }).setView(AHMEDABAD_CENTRE, 14);
-    const tiles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(heritageMap);
-    tiles.on("tileerror", () => {
-        if (tileErrorReported) return;
-        tileErrorReported = true;
-        mapStatus("Map tiles could not be loaded. The nearby site list is still available.", true);
-    });
     const categorySelect = document.getElementById("mapCategoryFilter");
     categorySelect.addEventListener("change", () => renderMarkers(categorySelect.value));
     locateButton.addEventListener("click", () => {
         if (!navigator.geolocation) {
-            mapStatus("Location is not supported by this browser. You can still browse the map.", true);
+            mapStatus("Location is not supported by this browser. You can still browse heritage sites.", true);
             return;
         }
         locateButton.disabled = true;
@@ -243,6 +240,23 @@ async function initializeHeritageMap() {
             mapStatus(message, true);
         }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
     });
+
+    try {
+        await window.hxGoogleMapsReady;
+        heritageMap = new google.maps.Map(container, {
+            center: AHMEDABAD_CENTRE,
+            zoom: 14,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: true,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+        });
+        infoWindow = new google.maps.InfoWindow();
+        container.setAttribute("aria-busy", "false");
+    } catch (error) {
+        mapUnavailableReason = error.message;
+        container.setAttribute("aria-busy", "false");
+    }
 
     await loadHeritageSites();
 }

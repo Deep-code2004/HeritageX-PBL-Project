@@ -38,7 +38,7 @@ test("Netlify proxy preserves path, method, cookies, and multiple Set-Cookie hea
     await withBackend(async (received) => {
         const result = await netlifyProxy.handler({
             path: "/.netlify/functions/api-proxy/auth/login",
-            rawQuery: "next=home",
+            queryStringParameters: { next: "home" },
             httpMethod: "POST",
             headers: {
                 cookie: "guest=1",

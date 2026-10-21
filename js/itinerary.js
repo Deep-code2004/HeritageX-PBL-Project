@@ -118,60 +118,82 @@ function renderItineraryMap(sites) {
     const container = document.getElementById("itineraryMap");
     if (!container) return;
 
-    if (!window.L) {
-        document.getElementById("itineraryMapStatus").textContent =
-            "Map preview unavailable. Your ordered stops and distance summary are still shown above.";
-        return;
-    }
-    if (!itMap) {
-        itMap = L.map(container, {
-            scrollWheelZoom: false,
-            keyboard: true
-        }).setView([23.028, 72.585], 13);
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(itMap).once("tileerror", () => {
-            document.getElementById("itineraryMapStatus").textContent =
-                "Map tiles could not be loaded. Your ordered stops and distance summary remain available above.";
-            container.setAttribute("aria-label", "Itinerary route; map tiles could not be loaded");
-        });
-    }
-    itMarkers.forEach((marker) => marker.remove());
-    itMarkers = [];
-    if (itPolyline) { itPolyline.remove(); itPolyline = null; }
-
     if (!sites.length) {
         container.setAttribute("aria-label", "No itinerary stops to display on map");
         document.getElementById("itineraryMapStatus").textContent = "Add a stop to preview your route.";
         return;
     }
 
-    const latlngs = sites.map((site) => [site.latitude, site.longitude]);
-    sites.forEach((site, index) => {
-        const icon = L.divIcon({
-            className: "hx-map-stop",
-            html: `<span aria-hidden="true">${index + 1}</span>`,
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
-        });
-        const marker = L.marker(latlngs[index], {
-            icon,
-            title: `${index + 1}. ${site.name}`,
-            alt: `${index + 1}. ${site.name}`,
-            keyboard: true
-        }).addTo(itMap);
-        const label = document.createElement("strong");
-        label.textContent = `${index + 1}. ${site.name}`;
-        marker.bindPopup(label);
-        itMarkers.push(marker);
-    });
+    window.hxGoogleMapsReady.then(() => {
+        if (!itMap) {
+            itMap = new google.maps.Map(container, {
+                center: { lat: 23.028, lng: 72.585 },
+                zoom: 13,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: true
+            });
+        }
+        itMarkers.forEach((marker) => marker.setMap(null));
+        itMarkers = [];
+        if (itPolyline) {
+            itPolyline.setMap(null);
+            itPolyline = null;
+        }
 
-    itPolyline = L.polyline(latlngs, { color: "#C17A45", weight: 3, dashArray: "6 6" }).addTo(itMap);
-    if (latlngs.length === 1) itMap.setView(latlngs[0], 15);
-    else itMap.fitBounds(itPolyline.getBounds(), { padding: [30, 30] });
-    container.setAttribute("aria-label", `Map showing ${sites.length} itinerary stops in order`);
-    document.getElementById("itineraryMapStatus").textContent = `Map showing ${sites.length} itinerary stops in order.`;
+        const path = sites.map((site) => ({
+            lat: Number(site.latitude),
+            lng: Number(site.longitude)
+        })).filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
+        if (!path.length) {
+            document.getElementById("itineraryMapStatus").textContent =
+                "No itinerary stops have valid map coordinates.";
+            return;
+        }
+
+        sites.forEach((site, index) => {
+            const position = { lat: Number(site.latitude), lng: Number(site.longitude) };
+            if (!Number.isFinite(position.lat) || !Number.isFinite(position.lng)) return;
+            const marker = new google.maps.Marker({
+                map: itMap,
+                position,
+                title: `${index + 1}. ${site.name}`,
+                label: { text: String(index + 1), color: "#ffffff", fontWeight: "700" }
+            });
+            const infoWindow = new google.maps.InfoWindow();
+            marker.addListener("click", () => {
+                const label = document.createElement("strong");
+                label.textContent = `${index + 1}. ${site.name}`;
+                infoWindow.setContent(label);
+                infoWindow.open({ map: itMap, anchor: marker });
+            });
+            itMarkers.push(marker);
+        });
+
+        itPolyline = new google.maps.Polyline({
+            path,
+            geodesic: true,
+            strokeColor: "#C17A45",
+            strokeOpacity: 0.9,
+            strokeWeight: 3,
+            map: itMap
+        });
+        if (path.length === 1) {
+            itMap.setCenter(path[0]);
+            itMap.setZoom(15);
+        } else {
+            const bounds = new google.maps.LatLngBounds();
+            path.forEach((point) => bounds.extend(point));
+            itMap.fitBounds(bounds, 30);
+        }
+        container.setAttribute("aria-label", `Google Map showing ${path.length} itinerary stops in order`);
+        document.getElementById("itineraryMapStatus").textContent =
+            `Google Map showing ${path.length} itinerary stops in order.`;
+    }).catch((error) => {
+        document.getElementById("itineraryMapStatus").textContent =
+            `${error.message} Your ordered stops and distance summary remain available above.`;
+        container.setAttribute("aria-label", "Itinerary map unavailable; ordered stops are listed above");
+    });
 }
 
 function populateAddPlaceSelect() {

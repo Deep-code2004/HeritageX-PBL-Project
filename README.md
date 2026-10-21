@@ -26,6 +26,10 @@ Check `http://localhost:5000/api/health` for process liveness and `http://localh
 
 Configure `NODE_ENV=production`, `PORT`, pooled runtime `DATABASE_URL`, direct migration `DIRECT_URL`, distinct `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` values (at least 32 characters each), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `CORS_ORIGINS` in the backend hosting provider's secret/environment settings. Production `CORS_ORIGINS` is required and must list only exact deployed frontend origins, comma-separated, with no paths, wildcards, or trailing slash. Use the direct database URL for Prisma migration jobs and test schema changes against an isolated staging branch/database first. Never commit `.env` files or production credentials.
 
+### Google Maps setup
+
+The home preview, map explorer, heritage-site details, trip itinerary, and heritage-walk routes use the Google Maps JavaScript API. Create a Google Maps API key, enable billing and the Maps JavaScript API for its project, then put the key in `window.HX_GOOGLE_MAPS_API_KEY` in [js/runtime-config.js](./js/runtime-config.js). Browser Maps keys are visible to site visitors by design: restrict the key by HTTP referrer to the local development origin and the exact production/preview site domains, and restrict its API access to the Maps JavaScript API. Do not reuse the previously exposed key. The pages provide an accessible fallback if the key is missing or Google rejects it.
+
 Netlify and Vercel proxy `/api/*` through serverless functions to preserve same-origin HttpOnly session cookies. Set `API_BACKEND_URL` in each frontend provider's server-side environment settings to the backend origin only (for example, `https://your-api.example.com`, without `/api`); the proxy appends `/api`. Never put this variable or database/JWT credentials into frontend code. `js/runtime-config.js` intentionally leaves the API base unset so the site uses the same-origin proxy. The backend's `CORS_ORIGINS` must list exact deployed frontend origins.
 
 For a Render backend, [render.yaml](./render.yaml) defines the Node service build, Prisma migration deploy command, and database-backed `/api/ready` health check. Add the listed secrets and connection URLs in Render before its first deploy. Use a pooled `DATABASE_URL` for runtime traffic and a direct `DIRECT_URL` for Prisma migrations. After the first deployment, initialize content and the first administrator in a controlled one-time operation with `npm run prisma:seed`; review the seed script and target database before running it. Do not run the demo seed against a populated production database.
@@ -188,8 +192,7 @@ A separate admin interface is included for managing platform content and adminis
 | **Bootstrap 5** | Responsive UI components |
 | **Bootstrap Icons** | Interface icons |
 | **Chart.js** | Dashboard analytics |
-| **Leaflet** | Interactive maps |
-| **OpenStreetMap** | Map data |
+| **Google Maps JavaScript API** | Interactive maps, markers, and route previews |
 
 ### Backend
 Backend development and API integration are handled separately. The backend is expected to provide:

@@ -15,7 +15,9 @@ exports.handler = async (event) => {
 
     const prefix = "/.netlify/functions/api-proxy";
     const path = event.path.startsWith(prefix) ? event.path.slice(prefix.length) : "";
-    const query = event.rawQuery ? `?${event.rawQuery.replace(/^\?/, "")}` : "";
+    const rawQuery = event.rawQuery ||
+        new URLSearchParams(event.queryStringParameters || {}).toString();
+    const query = rawQuery ? `?${rawQuery.replace(/^\?/, "")}` : "";
     const headers = new Headers();
     FORWARDED_HEADERS.forEach((name) => {
         if (event.headers[name]) headers.set(name, event.headers[name]);
