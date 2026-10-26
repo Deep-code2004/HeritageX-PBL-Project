@@ -58,28 +58,46 @@
                 <main class="admin-content">
 
                     <div class="row g-3 mb-4">
-                        <div class="col-6 col-lg-3">
+                        <div class="col-6 col-xl">
                             <div class="admin-stat-card text-center">
                                 <div class="num" id="statTotal">0</div>
                                 <div class="label">Total sites</div>
                             </div>
                         </div>
-                        <div class="col-6 col-lg-3">
+                        <div class="col-6 col-xl">
                             <div class="admin-stat-card text-center">
                                 <div class="num" id="statVerified">0</div>
                                 <div class="label">Verified sites</div>
                             </div>
                         </div>
-                        <div class="col-6 col-lg-3">
+                        <div class="col-6 col-xl">
                             <div class="admin-stat-card text-center">
                                 <div class="num" id="statPending">0</div>
                                 <div class="label">Pending reviews</div>
                             </div>
                         </div>
-                        <div class="col-6 col-lg-3">
+                        <div class="col-6 col-xl">
                             <div class="admin-stat-card text-center">
                                 <div class="num" id="statCategories">0</div>
                                 <div class="label">Categories</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-xl">
+                            <div class="admin-stat-card text-center">
+                                <div class="num" id="statPendingSites">0</div>
+                                <div class="label">Sites awaiting verification</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-xl">
+                            <div class="admin-stat-card text-center">
+                                <div class="num" id="statAverageRating">0.0</div>
+                                <div class="label">Average site rating</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-xl">
+                            <div class="admin-stat-card text-center">
+                                <div class="num" id="statTotalReviews">0</div>
+                                <div class="label">Published reviews</div>
                             </div>
                         </div>
                     </div>
@@ -144,6 +162,23 @@
                             </a>
                         </div>
                     </div>
+
+                    <section class="admin-panel-card p-3 p-lg-4 mt-4" aria-labelledby="auditHeading">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2 class="h5 mb-0" id="auditHeading">Recent admin activity</h2>
+                            <button class="btn btn-outline-secondary btn-sm" id="refreshAuditBtn" type="button">
+                                <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Refresh
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead>
+                                    <tr><th>Action</th><th>Record</th><th>Time</th></tr>
+                                </thead>
+                                <tbody id="auditLogBody" aria-live="polite"></tbody>
+                            </table>
+                        </div>
+                    </section>
                 </main>
             </div>
         </div>

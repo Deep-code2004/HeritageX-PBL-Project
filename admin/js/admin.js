@@ -9,6 +9,16 @@ const ADMIN_API_BASE =
     ? "http://localhost:5000/api"
     : "/api";
 
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character]);
+}
+
 /* ---------- Self-contained toast (works even if main.js is absent) ---------- */
 function showToast(title, icon = "bi-check-circle-fill", subtitle = "") {
   let container = document.querySelector(".hx-toast-container");
@@ -26,10 +36,10 @@ function showToast(title, icon = "bi-check-circle-fill", subtitle = "") {
   el.setAttribute("aria-live", "polite");
   el.innerHTML = `
     <div class="d-flex align-items-center px-3 py-2">
-      <i class="bi ${icon} me-2" style="color:#CBA75A;font-size:1.1rem;"></i>
+      <i class="bi ${escapeHTML(icon)} me-2" style="color:#CBA75A;font-size:1.1rem;"></i>
       <div class="me-3">
-        <div style="font-weight:600;font-size:0.92rem;">${title}</div>
-        ${subtitle ? `<div style="font-size:0.78rem;opacity:0.75;">${subtitle}</div>` : ""}
+        <div style="font-weight:600;font-size:0.92rem;">${escapeHTML(title)}</div>
+        ${subtitle ? `<div style="font-size:0.78rem;opacity:0.75;">${escapeHTML(subtitle)}</div>` : ""}
       </div>
       <button type="button" class="btn-close btn-close-white ms-auto" aria-label="Close"></button>
     </div>`;
@@ -39,7 +49,7 @@ function showToast(title, icon = "bi-check-circle-fill", subtitle = "") {
 }
 
 /* ---------- Core fetch wrapper ---------- */
-async function adminFetch(path, options = {}) {
+async function adminRequest(path, options = {}) {
   const { method = "GET", body } = options;
   const res = await fetch(`${ADMIN_API_BASE}${path}`, {
     method,
@@ -59,7 +69,11 @@ async function adminFetch(path, options = {}) {
     }
     throw new Error(json?.error?.message || `Request failed: ${res.status}`);
   }
-  return json.data;
+  return json;
+}
+
+async function adminFetch(path, options = {}) {
+  return (await adminRequest(path, options)).data;
 }
 
 /* ---------- Loading / error helpers ---------- */
@@ -74,12 +88,15 @@ function setErrorRow(tbodyId, msg, colSpan = 5) {
   const el = document.getElementById(tbodyId);
   if (el) {
     el.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-4 text-danger">
-      <i class="bi bi-exclamation-triangle me-1"></i>${msg}</td></tr>`;
+      <i class="bi bi-exclamation-triangle me-1"></i>${escapeHTML(msg)}</td></tr>`;
   }
 }
 
 // In-memory cache of loaded sites
 let cachedAdminSites = [];
+let currentSitesPage = 1;
+let totalSitesPages = 1;
+const ADMIN_SITE_PAGE_SIZE = 25;
 
 /* ─────────────────────────────────────────────────────────────────────────────
    STATS (every admin page)
@@ -98,8 +115,16 @@ async function renderStats() {
     if (catEl) catEl.textContent = data.stats.categories;
     const penEl = document.getElementById("statPending");
     if (penEl) penEl.textContent = data.stats.pending;
+    const pendingSitesEl = document.getElementById("statPendingSites");
+    if (pendingSitesEl) pendingSitesEl.textContent = data.stats.pendingSites;
+    const averageRatingEl = document.getElementById("statAverageRating");
+    if (averageRatingEl) averageRatingEl.textContent = Number(data.stats.averageRating || 0).toFixed(1);
+    const totalReviewsEl = document.getElementById("statTotalReviews");
+    if (totalReviewsEl) totalReviewsEl.textContent = data.stats.totalReviews;
   } catch (e) {
-    console.warn("Stats fetch failed:", e);
+    const stats = document.querySelectorAll("#statTotal, #statVerified, #statCategories, #statPending, #statPendingSites, #statAverageRating, #statTotalReviews");
+    stats.forEach((element) => { element.textContent = "Unavailable"; });
+    showToast("Dashboard statistics could not be loaded", "bi-exclamation-circle", e.message);
   }
 }
 
@@ -113,8 +138,31 @@ async function renderSitesTable() {
   setLoadingRow("sitesTableBody");
 
   try {
-    const sites = await adminFetch("/admin/heritage?limit=100");
-    cachedAdminSites = Array.isArray(sites) ? sites : [];
+    const params = new URLSearchParams({
+      page: String(currentSitesPage),
+      limit: String(ADMIN_SITE_PAGE_SIZE),
+    });
+    const query = document.getElementById("siteSearch")?.value.trim();
+    const category = document.getElementById("siteCategoryFilter")?.value;
+    const verification = document.getElementById("siteVerificationFilter")?.value;
+    if (query) params.set("q", query);
+    if (category) params.set("category", category);
+    if (verification) params.set("verification", verification);
+
+    const response = await adminRequest(`/admin/heritage?${params}`);
+    cachedAdminSites = Array.isArray(response.data) ? response.data : [];
+    totalSitesPages = Math.max(1, response.meta?.totalPages || 1);
+    const pageSummary = document.getElementById("sitesPageSummary");
+    if (pageSummary) {
+      const total = Number(response.meta?.total || 0);
+      pageSummary.textContent = total
+        ? `Page ${currentSitesPage} of ${totalSitesPages} · ${total} site${total === 1 ? "" : "s"}`
+        : "No sites match these filters.";
+    }
+    const previous = document.getElementById("sitesPreviousPage");
+    const next = document.getElementById("sitesNextPage");
+    if (previous) previous.disabled = currentSitesPage <= 1;
+    if (next) next.disabled = currentSitesPage >= totalSitesPages;
 
     if (!cachedAdminSites.length) {
       tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-secondary">
@@ -128,30 +176,32 @@ async function renderSitesTable() {
       <tr>
         <td>
           <div class="d-flex align-items-center gap-2">
-            <img src="${s.image || 'https://via.placeholder.com/40'}" alt=""
+            <img src="${escapeHTML(s.image || 'https://placehold.co/80x80?text=Site')}" alt=""
               style="width:40px;height:40px;object-fit:cover;border-radius:6px;"
-              onerror="this.src='https://via.placeholder.com/40'">
+              onerror="this.src='https://placehold.co/80x80?text=Site'">
             <div>
-              <div class="fw-semibold">${s.name}</div>
-              <div class="small text-secondary">${s.duration || ""}</div>
+              <div class="fw-semibold">${escapeHTML(s.name)}</div>
+              <div class="small text-secondary">${escapeHTML(s.duration || "")}</div>
             </div>
           </div>
         </td>
-        <td><span class="badge bg-light text-dark border">${s.categoryName || s.category?.name || "—"}</span></td>
+        <td><span class="badge bg-light text-dark border">${escapeHTML(s.categoryName || s.category?.name || "—")}</span></td>
         <td><i class="bi bi-star-fill text-warning"></i> ${(s.rating || 0).toFixed(1)}
           <span class="small text-secondary">(${s.reviewCount || 0})</span></td>
         <td>
           ${
-            s.verified
+            s.verification === "VERIFIED" || s.verified
               ? `<span class="badge bg-success-subtle text-success-emphasis"><i class="bi bi-patch-check me-1"></i>Verified</span>`
-              : `<span class="badge bg-warning-subtle text-warning-emphasis"><i class="bi bi-clock me-1"></i>Pending</span>`
+              : s.verification === "REJECTED"
+                ? `<span class="badge bg-danger-subtle text-danger-emphasis"><i class="bi bi-x-circle me-1"></i>Rejected</span>`
+                : `<span class="badge bg-warning-subtle text-warning-emphasis"><i class="bi bi-clock me-1"></i>Pending</span>`
           }
         </td>
         <td class="text-end">
-          <button class="btn btn-sm btn-outline-secondary edit-site-btn me-1" data-id="${s.id}" title="Edit">
+          <button class="btn btn-sm btn-outline-secondary edit-site-btn me-1" data-id="${s.id}" title="Edit ${escapeHTML(s.name)}" aria-label="Edit ${escapeHTML(s.name)}">
             <i class="bi bi-pencil"></i>
           </button>
-          <button class="btn btn-sm btn-outline-danger delete-site-btn" data-id="${s.id}" title="Delete">
+          <button class="btn btn-sm btn-outline-danger delete-site-btn" data-id="${s.id}" title="Delete ${escapeHTML(s.name)}" aria-label="Delete ${escapeHTML(s.name)}">
             <i class="bi bi-trash"></i>
           </button>
         </td>
@@ -166,6 +216,8 @@ async function renderSitesTable() {
       btn.addEventListener("click", () => deleteSite(Number(btn.dataset.id)))
     );
   } catch (e) {
+    const pageSummary = document.getElementById("sitesPageSummary");
+    if (pageSummary) pageSummary.textContent = "Site list could not be loaded.";
     setErrorRow("sitesTableBody", "Failed to load sites: " + e.message);
   }
 }
@@ -173,21 +225,36 @@ async function renderSitesTable() {
 async function populateCategorySelect() {
   const sel = document.getElementById("siteFormCategory");
   if (!sel) return;
+  const categoryFilter = document.getElementById("siteCategoryFilter");
+  const selectedFilter = categoryFilter?.value || "";
   try {
     const categories = await adminFetch("/categories");
     if (Array.isArray(categories) && categories.length) {
       sel.innerHTML = categories
-        .map((c) => `<option value="${c.name}">${c.name}</option>`)
+        .map((c) => `<option value="${escapeHTML(c.name)}">${escapeHTML(c.name)}</option>`)
         .join("");
+      const filter = document.getElementById("siteCategoryFilter");
+      if (filter) {
+        filter.replaceChildren(new Option("All categories", ""));
+        categories.forEach((category) => filter.add(new Option(category.name, category.name)));
+        filter.value = selectedFilter;
+      }
       return;
     }
-  } catch (_) { /* fall through */ }
-  // Fallback list in case API is unavailable
+  } catch (error) {
+    showToast("Categories could not be loaded", "bi-exclamation-circle", error.message);
+  }
   const fallback = [
     "Historical Monuments", "Sultanate Heritage", "Religious Heritage",
     "Pols & Havelis", "Museums", "Markets", "Living Heritage",
   ];
-  sel.innerHTML = fallback.map((c) => `<option value="${c}">${c}</option>`).join("");
+  sel.innerHTML = fallback.map((c) => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join("");
+  const filter = document.getElementById("siteCategoryFilter");
+  if (filter) {
+    filter.replaceChildren(new Option("All categories", ""));
+    fallback.forEach((category) => filter.add(new Option(category, category)));
+    filter.value = selectedFilter;
+  }
 }
 
 async function openSiteModal(id) {
@@ -212,11 +279,23 @@ async function openSiteModal(id) {
     document.getElementById("siteFormFee").value = site.entryFee || "";
     document.getElementById("siteFormLat").value = site.latitude || "";
     document.getElementById("siteFormLng").value = site.longitude || "";
-    document.getElementById("siteFormVerified").value = String(site.verified);
+    document.getElementById("siteFormVerified").value =
+      site.verification || (site.verified ? "VERIFIED" : "PENDING");
+    document.getElementById("siteFormHistory").value = site.history || "";
+    document.getElementById("siteFormSignificance").value = site.culturalSignificance || "";
+    document.getElementById("siteFormArchitecture").value = site.architecture || "";
+    document.getElementById("siteFormDuration").value = site.duration || "";
+    document.getElementById("siteFormDurationMinutes").value = site.durationMinutes || "";
+    document.getElementById("siteFormGuidelines").value = (site.responsibleGuidelines || []).join("\n");
+    document.getElementById("siteFormTags").value = (site.tags || []).join(", ");
+    document.getElementById("siteFormInterests").value = (site.interests || []).join(", ");
+    document.getElementById("siteFormSource").value = site.source || "";
   } else {
     modalTitle.textContent = "Add Heritage Site";
     document.getElementById("siteFormId").value = "";
-    document.getElementById("siteFormVerified").value = "true";
+    document.getElementById("siteFormVerified").value = "VERIFIED";
+    document.getElementById("siteFormDuration").value = "45–60 min";
+    document.getElementById("siteFormDurationMinutes").value = "60";
     // Default coordinates: Ahmedabad old city centre
     document.getElementById("siteFormLat").value = "23.0225";
     document.getElementById("siteFormLng").value = "72.5827";
@@ -248,6 +327,27 @@ function wireSitesPage() {
   }
 
   const form = document.getElementById("siteForm");
+  const filterForm = document.getElementById("sitesFilterForm");
+  filterForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    currentSitesPage = 1;
+    renderSitesTable();
+  });
+  document.getElementById("resetSiteFilters")?.addEventListener("click", () => {
+    filterForm?.reset();
+    currentSitesPage = 1;
+    renderSitesTable();
+  });
+  document.getElementById("sitesPreviousPage")?.addEventListener("click", () => {
+    if (currentSitesPage <= 1) return;
+    currentSitesPage -= 1;
+    renderSitesTable();
+  });
+  document.getElementById("sitesNextPage")?.addEventListener("click", () => {
+    if (currentSitesPage >= totalSitesPages) return;
+    currentSitesPage += 1;
+    renderSitesTable();
+  });
   if (!form) return;
 
   const saveBtn = document.getElementById("saveSiteBtn");
@@ -267,14 +367,27 @@ function wireSitesPage() {
     const lngRaw = document.getElementById("siteFormLng")?.value;
     const latitude = latRaw ? parseFloat(latRaw) : 23.0225;
     const longitude = lngRaw ? parseFloat(lngRaw) : 72.5827;
-    const verified = document.getElementById("siteFormVerified").value === "true";
+    const verification = document.getElementById("siteFormVerified").value;
+    const durationMinutesRaw = document.getElementById("siteFormDurationMinutes").value;
+    const toList = (value) => value.split(",").map((item) => item.trim()).filter(Boolean);
+    const responsibleGuidelines = document.getElementById("siteFormGuidelines").value
+      .split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
 
     const payload = {
-      name, category, shortDescription, verified,
+      name, category, shortDescription, verification,
       latitude, longitude,
       ...(image && { image }),
       ...(timings && { timings }),
       ...(entryFee && { entryFee }),
+      history: document.getElementById("siteFormHistory").value.trim(),
+      culturalSignificance: document.getElementById("siteFormSignificance").value.trim(),
+      architecture: document.getElementById("siteFormArchitecture").value.trim(),
+      duration: document.getElementById("siteFormDuration").value.trim() || "45–60 min",
+      ...(durationMinutesRaw && { durationMinutes: Number(durationMinutesRaw) }),
+      responsibleGuidelines,
+      tags: toList(document.getElementById("siteFormTags").value),
+      interests: toList(document.getElementById("siteFormInterests").value),
+      source: document.getElementById("siteFormSource").value.trim(),
     };
 
     try {
@@ -309,11 +422,17 @@ async function renderPendingReviews() {
     <div class="spinner-border spinner-border-sm me-2" role="status"></div>Loading reviews…</div>`;
 
   try {
-    const reviews = await adminFetch("/admin/reviews?status=PENDING");
+    const status = document.getElementById("reviewStatusFilter")?.value;
+    const reviews = await adminFetch(`/admin/reviews${status ? `?status=${encodeURIComponent(status)}` : ""}`);
     const arr = Array.isArray(reviews) ? reviews : [];
 
     if (!arr.length) {
       list.innerHTML = "";
+      const title = emptyEl?.querySelector("h3");
+      const description = emptyEl?.querySelector("p");
+      const selectedStatus = document.getElementById("reviewStatusFilter")?.value;
+      if (title) title.textContent = selectedStatus ? `No ${selectedStatus.toLowerCase()} reviews` : "No reviews found";
+      if (description) description.textContent = "Reviews will appear here when visitors submit them.";
       emptyEl?.classList.remove("d-none");
       return;
     }
@@ -322,29 +441,31 @@ async function renderPendingReviews() {
     list.innerHTML = arr
       .map(
         (r) => `
-      <div class="admin-panel-card p-3 mb-3" id="review-${r.id}">
+      <div class="admin-panel-card p-3 mb-3" id="review-${escapeHTML(r.id)}">
         <div class="d-flex justify-content-between align-items-start gap-3">
           <div class="flex-grow-1">
             <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-              <strong>${r.site?.name || "Heritage Site"}</strong>
+            <strong>${escapeHTML(r.site?.name || "Heritage Site")}</strong>
               <span class="text-warning">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span>
-            </div>
-            <p class="small text-secondary mb-1">${r.comment || "(no comment)"}</p>
-            <span class="small text-secondary">
-              By <strong>${r.user?.name || "Anonymous"}</strong>
-              ${r.user?.email ? `(${r.user.email})` : ""}
-              · ${new Date(r.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-            </span>
+            <span class="badge ${r.status === "APPROVED" ? "bg-success-subtle text-success-emphasis" : r.status === "REJECTED" ? "bg-danger-subtle text-danger-emphasis" : "bg-warning-subtle text-warning-emphasis"}">${escapeHTML(r.status)}</span>
           </div>
-          <div class="d-flex gap-2 flex-shrink-0">
-            <button class="btn btn-sm btn-admin-primary approve-review-btn" data-id="${r.id}">
-              <i class="bi bi-check-lg me-1"></i>Approve
-            </button>
-            <button class="btn btn-sm btn-outline-danger reject-review-btn" data-id="${r.id}">
-              <i class="bi bi-x-lg me-1"></i>Reject
-            </button>
-          </div>
+          <p class="small text-secondary mb-1">${escapeHTML(r.comment || "(no comment)")}</p>
+          <span class="small text-secondary">
+            By <strong>${escapeHTML(r.user?.name || "Anonymous")}</strong>
+            ${r.user?.email ? `(${escapeHTML(r.user.email)})` : ""}
+            · ${new Date(r.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+          </span>
         </div>
+        <div class="d-flex gap-2 flex-shrink-0">
+          ${r.status !== "APPROVED" ? `<button class="btn btn-sm btn-admin-primary approve-review-btn" data-id="${escapeHTML(r.id)}">
+            <i class="bi bi-check-lg me-1"></i>Approve</button>` : ""}
+          ${r.status !== "REJECTED" ? `<button class="btn btn-sm btn-outline-warning reject-review-btn" data-id="${escapeHTML(r.id)}">
+            <i class="bi bi-x-lg me-1"></i>Reject</button>` : ""}
+          ${r.status !== "PENDING" ? `<button class="btn btn-sm btn-outline-secondary pending-review-btn" data-id="${escapeHTML(r.id)}">Return to pending</button>` : ""}
+          <button class="btn btn-sm btn-outline-danger delete-review-btn" data-id="${escapeHTML(r.id)}" aria-label="Delete review by ${escapeHTML(r.user?.name || "Anonymous")}">
+            <i class="bi bi-trash" aria-hidden="true"></i><span class="visually-hidden">Delete review</span></button>
+        </div>
+      </div>
       </div>`
       )
       .join("");
@@ -355,27 +476,44 @@ async function renderPendingReviews() {
     list.querySelectorAll(".reject-review-btn").forEach((btn) =>
       btn.addEventListener("click", () => moderateReview(btn.dataset.id, "reject"))
     );
+    list.querySelectorAll(".pending-review-btn").forEach((btn) =>
+      btn.addEventListener("click", () => moderateReview(btn.dataset.id, "pending"))
+    );
+    list.querySelectorAll(".delete-review-btn").forEach((btn) =>
+      btn.addEventListener("click", () => deleteReview(btn.dataset.id))
+    );
   } catch (err) {
     list.innerHTML = `<div class="text-center text-danger py-4">
-      <i class="bi bi-exclamation-triangle me-1"></i>Failed to load reviews: ${err.message}</div>`;
+      <i class="bi bi-exclamation-triangle me-1"></i>Failed to load reviews: ${escapeHTML(err.message)}</div>`;
   }
 }
 
 async function moderateReview(id, action) {
   const card = document.getElementById(`review-${id}`);
-  const status = action === "approve" ? "APPROVED" : "REJECTED";
+  const status = action === "approve" ? "APPROVED" : action === "pending" ? "PENDING" : "REJECTED";
   try {
     // Optimistically hide the card
     if (card) card.style.opacity = "0.4";
     await adminFetch(`/admin/reviews/${id}`, { method: "PATCH", body: { status } });
     showToast(
-      action === "approve" ? "Review approved" : "Review rejected",
-      action === "approve" ? "bi-check-circle-fill" : "bi-x-circle"
+      action === "approve" ? "Review approved" : action === "pending" ? "Review returned to pending" : "Review rejected",
+      action === "approve" ? "bi-check-circle-fill" : action === "pending" ? "bi-clock" : "bi-x-circle"
     );
     await Promise.all([renderStats(), renderPendingReviews()]);
   } catch (err) {
     if (card) card.style.opacity = "1";
     showToast("Action failed", "bi-x-circle", err.message);
+  }
+}
+
+async function deleteReview(id) {
+  if (!confirm("Permanently delete this review? This cannot be undone.")) return;
+  try {
+    await adminFetch(`/admin/reviews/${encodeURIComponent(id)}`, { method: "DELETE" });
+    showToast("Review permanently deleted", "bi-trash");
+    await Promise.all([renderStats(), renderPendingReviews(), safeRenderCharts(), safeRenderAnalyticsTable()]);
+  } catch (error) {
+    showToast("Review could not be deleted", "bi-x-circle", error.message);
   }
 }
 
@@ -387,6 +525,7 @@ let categoryChartInstance, ratingChartInstance;
 async function renderCharts() {
   const catCanvas = document.getElementById("categoryChart");
   const ratingCanvas = document.getElementById("ratingChart");
+  const status = document.getElementById("analyticsStatus");
   if (!catCanvas || !ratingCanvas) return;
 
   if (window.ChartDataLabels && !Chart.registry.plugins.get("datalabels")) {
@@ -462,8 +601,10 @@ async function renderCharts() {
         },
       },
     });
+    if (status) status.textContent = "";
   } catch (err) {
-    console.error("Charts error:", err);
+    if (status) status.textContent = `Analytics charts could not be rendered: ${err.message}`;
+    showToast("Analytics charts could not be rendered", "bi-exclamation-circle", err.message);
   }
 }
 
@@ -491,7 +632,7 @@ async function renderAnalyticsTable() {
       .map(
         (row) => `
       <tr>
-        <td class="fw-semibold">${row.category}</td>
+        <td class="fw-semibold">${escapeHTML(row.category)}</td>
         <td class="text-end">${row.sites}</td>
         <td class="text-end">${row.verified} / ${row.sites}</td>
         <td class="text-end"><i class="bi bi-star-fill text-warning"></i> ${row.avgRating.toFixed(1)}</td>
@@ -501,6 +642,27 @@ async function renderAnalyticsTable() {
       .join("");
   } catch (err) {
     setErrorRow("analyticsTableBody", "Failed to load analytics: " + err.message, 5);
+  }
+}
+
+async function renderAuditLog() {
+  const tbody = document.getElementById("auditLogBody");
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-secondary">Loading activity…</td></tr>`;
+  try {
+    const logs = await adminFetch("/admin/audit");
+    if (!Array.isArray(logs) || logs.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-secondary">No administrator activity recorded yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = logs.slice(0, 10).map((log) => `
+      <tr>
+        <td><span class="badge bg-light text-dark border">${escapeHTML(log.action)}</span></td>
+        <td>${escapeHTML(log.entity)}${log.entityId ? ` · ${escapeHTML(log.entityId)}` : ""}</td>
+        <td><time datetime="${escapeHTML(log.createdAt)}">${escapeHTML(new Date(log.createdAt).toLocaleString("en-IN"))}</time></td>
+      </tr>`).join("");
+  } catch (error) {
+    tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-danger">Activity could not be loaded: ${escapeHTML(error.message)}</td></tr>`;
   }
 }
 
@@ -545,14 +707,18 @@ function wireSidebar() {
 document.addEventListener("DOMContentLoaded", async () => {
   wireSidebar();
   wireSitesPage();
+  document.getElementById("reviewStatusFilter")?.addEventListener("change", renderPendingReviews);
+  document.getElementById("refreshAuditBtn")?.addEventListener("click", renderAuditLog);
 
   // Load everything in parallel for speed
   await Promise.allSettled([
     renderStats(),
     renderSitesTable(),
+    populateCategorySelect(),
     renderPendingReviews(),
     safeRenderCharts(),
     safeRenderAnalyticsTable(),
+    renderAuditLog(),
   ]);
 
   document.getElementById("logoutBtn")?.addEventListener("click", () => logoutAdmin());

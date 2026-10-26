@@ -356,38 +356,22 @@ The backend should provide APIs that can be integrated with the existing fronten
 
 ## 🔐 Admin Panel & Security Notes
 
-The project contains a separate administrative interface for managing platform content.
+The admin interface is backed by the Express API and PostgreSQL. Admin API routes require a valid server-issued session and the `ADMIN` role; browser session storage is only a navigation hint and is not authorization.
 
 ### Admin Capabilities
-- Add heritage sites
-- Edit heritage sites
-- Delete heritage sites
-- Manage verification status
-- Moderate reviews
-- View analytics
-- Manage category-related information
+- Create, edit, search, filter, and page through heritage sites; manage full site content and verification state.
+- Delete a site after explicit confirmation.
+- Review pending, approved, and rejected visitor submissions; approve, reject, return to pending, or permanently delete reviews.
+- View category distribution, review-weighted average ratings, published review totals, pending moderation, and pending site verification.
+- Review category-level site counts, verification totals, ratings, and review totals.
 
-### ⚠️ Security Warning
-The current frontend admin authentication is intended for development/prototype purposes. Frontend-only authentication and browser storage must not be considered production-grade security.
-
-For production deployment, the backend should implement:
-- Server-side authentication
-- Secure password hashing using bcrypt, Argon2, or equivalent
-- Secure session tokens or JWT
-- Role-based access control (RBAC)
-- Server-side authorization
-- Strict input validation and sanitization
-- API authentication
-- Rate limiting
-- Secure database connections
-- Protection against common web vulnerabilities
-- Secure credential and secret management
+Admin credentials are provisioned from the backend's `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables when the reviewed seed command is run. Never commit these values or use a chat-shared password in production. Store production credentials in the backend hosting provider's secret manager.
 
 ---
 
 ## 🚧 Development Status
 
-The frontend development for the current project scope has been completed. The remaining work primarily involves backend development, database integration, API integration, production authentication, and full system testing.
+Core visitor and admin flows are integrated with the API and database. Repository tests cover automated behavior, but a production launch still requires provider secrets, a restricted Google Maps key, a deployment, and smoke tests against the deployed domains.
 
 | Module | Status |
 | :--- | :---: |
@@ -406,14 +390,11 @@ The frontend development for the current project scope has been completed. The r
 | Heritage Walks | ✅ Completed |
 | Culture & Heritage | ✅ Completed |
 | Saved Places | ✅ Completed |
-| Admin Dashboard | ✅ Frontend Completed |
-| Admin Authentication UI | ✅ Frontend Completed |
-| Backend API | 🔴 Pending |
-| Database | 🔴 Pending |
-| Production Authentication | 🔴 Pending |
-| Backend Integration | 🔴 Pending |
-| Full System Testing | 🔴 Pending |
-| Production Deployment | 🔴 Pending |
+| Admin Dashboard & API | ✅ Integrated |
+| Admin Authentication & Authorization | ✅ Server-side API and role checks |
+| Backend API & Database | ✅ Implemented; run migrations and tests for the target environment |
+| Automated Testing | ✅ Repository suites available; run before deployment |
+| Production Configuration & Smoke Testing | 🟡 Pending hosting-provider configuration |
 
 ### Status Legend
 - ✅ Completed

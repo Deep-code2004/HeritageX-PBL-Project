@@ -41,6 +41,11 @@ async function logAudit(
   }
 }
 
+function makeSiteSlug(name: string, fallbackId: number): string {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return slug || `heritage-site-${fallbackId}`;
+}
+
 // Helper to recalculate site rating & review count
 async function recalculateSiteRating(siteId: number, tx: Prisma.TransactionClient = prisma) {
   const reviews = await tx.review.findMany({
@@ -66,9 +71,21 @@ async function recalculateSiteRating(siteId: number, tx: Prisma.TransactionClien
 adminRouter.get("/heritage", async (req: Request, res: Response): Promise<any> => {
   const q = req.query.q ? String(req.query.q).trim() : undefined;
   const category = req.query.category ? String(req.query.category).trim() : undefined;
-  const verification = req.query.verification as VerificationStatus | undefined;
-  const page = Math.max(1, req.query.page ? parseInt(String(req.query.page), 10) : 1);
-  const limit = Math.min(100, Math.max(1, req.query.limit ? parseInt(String(req.query.limit), 10) : 50));
+  const verificationValue = req.query.verification ? String(req.query.verification) : undefined;
+  if (
+    verificationValue &&
+    !Object.values(VerificationStatus).includes(verificationValue as VerificationStatus)
+  ) {
+    return sendError(res, "INVALID_VERIFICATION_STATUS", "Verification status is invalid", undefined, 422);
+  }
+  const pageValue = Number(req.query.page || 1);
+  const limitValue = Number(req.query.limit || 50);
+  if (!Number.isInteger(pageValue) || pageValue < 1 || !Number.isInteger(limitValue) || limitValue < 1) {
+    return sendError(res, "INVALID_PAGINATION", "Page and limit must be positive integers", undefined, 422);
+  }
+  const verification = verificationValue as VerificationStatus | undefined;
+  const page = pageValue;
+  const limit = Math.min(100, limitValue);
   const skip = (page - 1) * limit;
 
   const where: Prisma.HeritageSiteWhereInput = {};
@@ -105,6 +122,7 @@ const adminSiteSchema = z.object({
   category: z.string().min(1, "Category is required"),
   shortDescription: z.string().min(5, "Short description is required"),
   verified: z.boolean().default(true),
+  verification: z.nativeEnum(VerificationStatus).optional(),
   history: z.string().optional(),
   culturalSignificance: z.string().optional(),
   architecture: z.string().optional(),
@@ -113,11 +131,14 @@ const adminSiteSchema = z.object({
   latitude: z.number().min(-90).max(90).default(23.0235),
   longitude: z.number().min(-180).max(180).default(72.586),
   duration: z.string().default("45–60 min"),
+  durationMinutes: z.number().int().positive().optional(),
   timings: z.string().optional(),
   entryFee: z.string().optional(),
   responsibleGuidelines: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
   interests: z.array(z.string()).optional(),
+  nearbyPlaces: z.array(z.number().int().positive()).optional(),
+  source: z.string().optional(),
 });
 
 // POST /api/admin/heritage (Create site)
@@ -128,6 +149,9 @@ adminRouter.post("/heritage", async (req: Request, res: Response): Promise<any> 
   }
 
   const data = result.data;
+  const verification = data.verification ?? (
+    data.verified ? VerificationStatus.VERIFIED : VerificationStatus.PENDING
+  );
 
   // Calculate next integer ID
   const maxSite = await prisma.heritageSite.findFirst({
@@ -149,10 +173,11 @@ adminRouter.post("/heritage", async (req: Request, res: Response): Promise<any> 
     });
   }
 
-  const slug = data.name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+  const slug = makeSiteSlug(data.name, nextId);
+  const slugExists = await prisma.heritageSite.findUnique({ where: { slug }, select: { id: true } });
+  if (slugExists) {
+    return sendError(res, "DUPLICATE_SITE_SLUG", "A heritage site with a similar name already exists.", undefined, 409);
+  }
 
   const site = await prisma.heritageSite.create({
     data: {
@@ -175,11 +200,13 @@ adminRouter.post("/heritage", async (req: Request, res: Response): Promise<any> 
       latitude: data.latitude,
       longitude: data.longitude,
       duration: data.duration,
-      durationMinutes: 60,
+      durationMinutes: data.durationMinutes || 60,
       timings: data.timings || "Open daily",
       entryFee: data.entryFee || "Free",
-      verified: data.verified,
-      verification: data.verified ? VerificationStatus.VERIFIED : VerificationStatus.PENDING,
+      verified: verification === VerificationStatus.VERIFIED,
+      verification,
+      ...(data.nearbyPlaces && { nearbyPlaces: data.nearbyPlaces }),
+      ...(data.source !== undefined && { source: data.source }),
       tags: data.tags || ["Heritage"],
       interests: data.interests || ["history"],
       responsibleGuidelines: data.responsibleGuidelines || ["Follow local heritage guidelines."],
@@ -212,6 +239,23 @@ adminRouter.put("/heritage/:id", async (req: Request, res: Response): Promise<an
   }
 
   const data = result.data;
+  const verification = data.verification ?? (
+    data.verified !== undefined
+      ? data.verified
+        ? VerificationStatus.VERIFIED
+        : VerificationStatus.PENDING
+      : undefined
+  );
+  if (data.name) {
+    const slug = makeSiteSlug(data.name, id);
+    const duplicate = await prisma.heritageSite.findFirst({
+      where: { slug, id: { not: id } },
+      select: { id: true },
+    });
+    if (duplicate) {
+      return sendError(res, "DUPLICATE_SITE_SLUG", "A heritage site with a similar name already exists.", undefined, 409);
+    }
+  }
   let categoryId = existing.categoryId;
 
   if (data.category && data.category !== existing.categoryName) {
@@ -231,23 +275,30 @@ adminRouter.put("/heritage/:id", async (req: Request, res: Response): Promise<an
     where: { id },
     data: {
       name: data.name,
+      slug: data.name ? makeSiteSlug(data.name, id) : undefined,
       categoryName: data.category,
       categoryId,
       shortDescription: data.shortDescription,
-      verified: data.verified,
-      verification:
-        data.verified !== undefined
-          ? data.verified
-            ? VerificationStatus.VERIFIED
-            : VerificationStatus.PENDING
-          : undefined,
+      verified: verification !== undefined
+        ? verification === VerificationStatus.VERIFIED
+        : undefined,
+      verification,
       history: data.history,
       culturalSignificance: data.culturalSignificance,
       architecture: data.architecture,
       image: data.image,
+      gallery: data.gallery,
       latitude: data.latitude,
       longitude: data.longitude,
       duration: data.duration,
+      durationMinutes: data.durationMinutes,
+      timings: data.timings,
+      entryFee: data.entryFee,
+      responsibleGuidelines: data.responsibleGuidelines,
+      tags: data.tags,
+      interests: data.interests,
+      nearbyPlaces: data.nearbyPlaces,
+      source: data.source,
     },
   });
 
@@ -289,7 +340,11 @@ adminRouter.delete("/heritage/:id", async (req: Request, res: Response): Promise
    2. REVIEW MODERATION (/api/admin/reviews)
 ------------------------------------------------------------- */
 adminRouter.get("/reviews", async (req: Request, res: Response): Promise<any> => {
-  const status = (req.query.status as ReviewStatus) || undefined;
+  const statusValue = req.query.status ? String(req.query.status) : undefined;
+  if (statusValue && !Object.values(ReviewStatus).includes(statusValue as ReviewStatus)) {
+    return sendError(res, "INVALID_REVIEW_STATUS", "Review status is invalid", undefined, 422);
+  }
+  const status = statusValue as ReviewStatus | undefined;
 
   const reviews = await prisma.review.findMany({
     where: status ? { status } : undefined,
@@ -310,11 +365,13 @@ adminRouter.get("/reviews", async (req: Request, res: Response): Promise<any> =>
 // PATCH /api/admin/reviews/:id (Approve or Reject review)
 adminRouter.patch("/reviews/:id", async (req: Request, res: Response): Promise<any> => {
   const id = String(req.params.id);
-  const { status } = req.body;
-
-  if (!["APPROVED", "REJECTED"].includes(status)) {
-    return sendError(res, "INVALID_STATUS", "Status must be APPROVED or REJECTED");
+  const result = z.object({
+    status: z.enum(["APPROVED", "REJECTED", "PENDING"]),
+  }).safeParse(req.body);
+  if (!result.success) {
+    return sendError(res, "INVALID_STATUS", "Status must be APPROVED, REJECTED, or PENDING", result.error.errors, 422);
   }
+  const { status } = result.data;
 
   const review = await prisma.review.findUnique({ where: { id } });
   if (!review) return sendError(res, "NOT_FOUND", "Review not found", undefined, 404);
@@ -359,10 +416,12 @@ adminRouter.delete("/reviews/:id", async (req: Request, res: Response): Promise<
    3. ADMIN ANALYTICS & DASHBOARD STATS (/api/admin/analytics)
 ------------------------------------------------------------- */
 adminRouter.get("/analytics", async (_req: Request, res: Response): Promise<any> => {
-  const [totalSites, verifiedSites, pendingReviews, allSites, categories] = await Promise.all([
+  const [totalSites, verifiedSites, pendingSites, pendingReviews, allReviews, allSites, categories] = await Promise.all([
     prisma.heritageSite.count(),
     prisma.heritageSite.count({ where: { verified: true } }),
+    prisma.heritageSite.count({ where: { verification: VerificationStatus.PENDING } }),
     prisma.review.count({ where: { status: ReviewStatus.PENDING } }),
+    prisma.review.count({ where: { status: ReviewStatus.APPROVED } }),
     prisma.heritageSite.findMany({
       select: {
         id: true,
@@ -384,10 +443,11 @@ adminRouter.get("/analytics", async (_req: Request, res: Response): Promise<any>
   const breakdown = categoryNames.map((cat) => {
     const inCat = allSites.filter((s) => s.categoryName === cat);
     const verified = inCat.filter((s) => s.verified).length;
-    const avgRating = inCat.length
-      ? Number((inCat.reduce((sum, s) => sum + s.rating, 0) / inCat.length).toFixed(1))
-      : 0.0;
+    const ratedSites = inCat.filter((site) => site.reviewCount > 0);
     const totalReviews = inCat.reduce((sum, s) => sum + s.reviewCount, 0);
+    const avgRating = totalReviews
+      ? Number((ratedSites.reduce((sum, site) => sum + site.rating * site.reviewCount, 0) / totalReviews).toFixed(1))
+      : 0;
 
     return {
       category: cat,
@@ -410,12 +470,18 @@ adminRouter.get("/analytics", async (_req: Request, res: Response): Promise<any>
     "#CBA75A",
   ];
 
+  const approvedReviewTotal = allSites.reduce((sum, site) => sum + site.reviewCount, 0);
   return sendSuccess(res, {
     stats: {
       total: totalSites,
       verified: verifiedSites,
+      pendingSites,
       pending: pendingReviews,
       categories: categoryNames.length,
+      totalReviews: allReviews,
+      averageRating: approvedReviewTotal
+        ? Number((allSites.reduce((sum, site) => sum + site.rating * site.reviewCount, 0) / approvedReviewTotal).toFixed(1))
+        : 0,
     },
     categoryChart: {
       labels: categoryNames,

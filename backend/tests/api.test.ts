@@ -2,6 +2,7 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "../src/app";
 import { env, parseEnvironment } from "../src/config/env";
+import { generateAccessToken } from "../src/utils/tokens";
 
 describe("HeritageX Backend API Test Suite", () => {
   // 1. Health check
@@ -156,6 +157,52 @@ describe("HeritageX Backend API Test Suite", () => {
   it("Unauthenticated request to /api/admin/analytics should return 401", async () => {
     const res = await request(app).get("/api/admin/analytics");
     expect(res.status).toBe(401);
+  });
+
+  it("admin analytics and site filters return validated, paginated data", async () => {
+    const token = generateAccessToken({
+      userId: "test-admin",
+      email: env.ADMIN_EMAIL,
+      name: "Test Admin",
+      role: "ADMIN",
+    });
+    const authorization = `Bearer ${token}`;
+    const [analytics, sites, invalidStatus] = await Promise.all([
+      request(app).get("/api/admin/analytics").set("Authorization", authorization),
+      request(app)
+        .get("/api/admin/heritage?page=1&limit=5&verification=VERIFIED")
+        .set("Authorization", authorization),
+      request(app)
+        .get("/api/admin/heritage?verification=NOT_A_STATUS")
+        .set("Authorization", authorization),
+    ]);
+
+    expect(analytics.status).toBe(200);
+    expect(analytics.body.data.stats).toMatchObject({
+      total: expect.any(Number),
+      verified: expect.any(Number),
+      pendingSites: expect.any(Number),
+      pending: expect.any(Number),
+      categories: expect.any(Number),
+      totalReviews: expect.any(Number),
+      averageRating: expect.any(Number),
+    });
+    expect(analytics.body.data.breakdown).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          category: expect.any(String),
+          sites: expect.any(Number),
+          verified: expect.any(Number),
+          avgRating: expect.any(Number),
+          totalReviews: expect.any(Number),
+        }),
+      ])
+    );
+    expect(sites.status).toBe(200);
+    expect(sites.body.data.length).toBeLessThanOrEqual(5);
+    expect(sites.body.meta).toMatchObject({ page: 1, limit: 5, totalPages: expect.any(Number) });
+    expect(sites.body.data.every((site: { verification: string }) => site.verification === "VERIFIED")).toBe(true);
+    expect(invalidStatus.status).toBe(422);
   });
 
   it("Unauthenticated visitor actions remain protected", async () => {

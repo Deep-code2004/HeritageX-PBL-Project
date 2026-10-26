@@ -134,6 +134,56 @@ async function mockGoogleMaps(page: Page) {
     });
 }
 
+async function mockAdminApi(page: Page) {
+    const requests: Array<{ path: string; method: string }> = [];
+    await page.route("https://**/*", (route) => route.abort());
+    await page.addInitScript(() => {
+        sessionStorage.setItem("heritagex_admin_session", JSON.stringify({ adminAuthenticated: true }));
+    });
+    await page.route("**/api/**", async (route: Route) => {
+        const url = new URL(route.request().url());
+        const path = url.pathname.replace(/^\/api/, "");
+        requests.push({ path: `${path}${url.search}`, method: route.request().method() });
+        const json = (status: number, body: unknown) =>
+            route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
+        if (path === "/auth/me") {
+            return json(200, {
+                success: true,
+                data: { user: { id: "test-admin", name: "Test Admin", email: "admin@example.test", role: "ADMIN" } }
+            });
+        }
+        if (path === "/categories") {
+            return json(200, { success: true, data: [{ name: "Historical Monuments", siteCount: 1 }] });
+        }
+        if (path === "/admin/analytics") {
+            return json(200, {
+                success: true,
+                data: {
+                    stats: { total: 1, verified: 1, pending: 0, categories: 1, pendingSites: 0, averageRating: 4.4, totalReviews: 10 },
+                    categoryChart: { labels: ["Historical Monuments"], data: [1], colors: ["#6E1E24"] },
+                    ratingChart: { labels: ["Historical Monuments"], data: [4.4] },
+                    breakdown: [{ category: "Historical Monuments", sites: 1, verified: 1, avgRating: 4.4, totalReviews: 10 }]
+                }
+            });
+        }
+        if (path === "/admin/audit") {
+            return json(200, {
+                success: true,
+                data: [{ action: "UPDATE_SITE", entity: "HeritageSite", entityId: "1", createdAt: "2026-10-21T10:00:00.000Z" }]
+            });
+        }
+        if (path === "/admin/heritage") {
+            return json(200, {
+                success: true,
+                data: [{ ...site, verification: "VERIFIED" }],
+                meta: { page: Number(url.searchParams.get("page") || 1), limit: 25, total: 1, totalPages: 1 }
+            });
+        }
+        return json(200, { success: true, data: [] });
+    });
+    return requests;
+}
+
 test("guest can search the API catalogue, open a detail, and save it locally", async ({ page }) => {
     await mockApi(page);
     await page.goto("/Pages/explore.html");
@@ -222,6 +272,34 @@ test("account form controls switch accessibly between sign-in and registration",
     await expect(register).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
     await expect(page.getByLabel("Name")).toBeVisible();
+});
+
+test("admin site management filters API results and shows review-weighted summary statistics", async ({ page }) => {
+    const requests = await mockAdminApi(page);
+    await page.goto("/admin/sites.html");
+
+    await expect(page.getByRole("heading", { name: "Manage heritage sites" })).toBeVisible();
+    await expect(page.locator("#statAverageRating")).toHaveText("4.4");
+    await expect(page.locator("#statTotalReviews")).toHaveText("10");
+    await expect(page.locator("#sitesTableBody")).toContainText("Bhadra Fort");
+
+    await page.getByRole("searchbox", { name: "Search sites" }).fill("Bhadra");
+    await page.getByLabel("Filter by verification status").selectOption("VERIFIED");
+    await page.getByRole("button", { name: "Apply" }).click();
+
+    await expect.poll(() => requests.some(({ path }) =>
+        path.includes("q=Bhadra") && path.includes("verification=VERIFIED")
+    )).toBe(true);
+    await expect(page.locator("#sitesPageSummary")).toContainText("Page 1 of 1");
+});
+
+test("admin dashboard displays recent activity without exposing audit metadata", async ({ page }) => {
+    await mockAdminApi(page);
+    await page.goto("/admin/dashboard.html");
+
+    await expect(page.getByRole("heading", { name: "Recent admin activity" })).toBeVisible();
+    await expect(page.locator("#auditLogBody")).toContainText("UPDATE_SITE");
+    await expect(page.locator("#auditLogBody")).toContainText("HeritageSite");
 });
 
 test("signed-in visitor actions are sent to the API and confirm successful review submission", async ({ page }) => {

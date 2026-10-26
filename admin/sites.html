@@ -55,28 +55,46 @@
 
                 <main class="admin-content">
                     <div class="row g-3 mb-4">
-                        <div class="col-6 col-lg-3">
+                        <div class="col-6 col-xl">
                             <div class="admin-stat-card text-center">
                                 <div class="num" id="statTotal">0</div>
                                 <div class="label">Total sites</div>
                             </div>
                         </div>
-                        <div class="col-6 col-lg-3">
+                        <div class="col-6 col-xl">
                             <div class="admin-stat-card text-center">
                                 <div class="num" id="statVerified">0</div>
                                 <div class="label">Verified sites</div>
                             </div>
                         </div>
-                        <div class="col-6 col-lg-3">
+                        <div class="col-6 col-xl">
                             <div class="admin-stat-card text-center">
                                 <div class="num" id="statPending">0</div>
                                 <div class="label">Pending reviews</div>
                             </div>
                         </div>
-                        <div class="col-6 col-lg-3">
+                        <div class="col-6 col-xl">
                             <div class="admin-stat-card text-center">
                                 <div class="num" id="statCategories">0</div>
                                 <div class="label">Categories</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-xl">
+                            <div class="admin-stat-card text-center">
+                                <div class="num" id="statPendingSites">0</div>
+                                <div class="label">Sites awaiting verification</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-xl">
+                            <div class="admin-stat-card text-center">
+                                <div class="num" id="statAverageRating">0.0</div>
+                                <div class="label">Average site rating</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-xl">
+                            <div class="admin-stat-card text-center">
+                                <div class="num" id="statTotalReviews">0</div>
+                                <div class="label">Published reviews</div>
                             </div>
                         </div>
                     </div>
@@ -88,6 +106,33 @@
                                 data-bs-target="#siteModal" id="addSiteBtn"><i class="bi bi-plus-lg me-1"></i> Add
                                 Heritage Site</button>
                         </div>
+                        <form id="sitesFilterForm" class="row g-2 mb-3" role="search" aria-label="Filter heritage sites">
+                            <div class="col-md-5">
+                                <label class="visually-hidden" for="siteSearch">Search sites</label>
+                                <input id="siteSearch" class="form-control" type="search" placeholder="Search by name or description">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="visually-hidden" for="siteCategoryFilter">Filter by category</label>
+                                <select id="siteCategoryFilter" class="form-select">
+                                    <option value="">All categories</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="visually-hidden" for="siteVerificationFilter">Filter by verification status</label>
+                                <select id="siteVerificationFilter" class="form-select">
+                                    <option value="">All statuses</option>
+                                    <option value="VERIFIED">Verified</option>
+                                    <option value="PENDING">Pending</option>
+                                    <option value="REJECTED">Rejected</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex gap-2">
+                                <button class="btn btn-outline-maroon flex-grow-1" type="submit">Apply</button>
+                                <button class="btn btn-outline-secondary" id="resetSiteFilters" type="button" aria-label="Reset filters">
+                                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </form>
                         <div class="table-responsive">
                             <table class="table align-middle">
                                 <thead>
@@ -101,6 +146,13 @@
                                 </thead>
                                 <tbody id="sitesTableBody"></tbody>
                             </table>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
+                            <span class="small text-secondary" id="sitesPageSummary" aria-live="polite"></span>
+                            <div class="btn-group" role="group" aria-label="Heritage site pages">
+                                <button class="btn btn-sm btn-outline-secondary" id="sitesPreviousPage" type="button">Previous</button>
+                                <button class="btn btn-sm btn-outline-secondary" id="sitesNextPage" type="button">Next</button>
+                            </div>
                         </div>
                     </div>
                 </main>
@@ -131,14 +183,27 @@
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold">Verification Status</label>
                                 <select id="siteFormVerified" class="form-select">
-                                    <option value="true">Verified</option>
-                                    <option value="false">Pending verification</option>
+                                    <option value="VERIFIED">Verified</option>
+                                    <option value="PENDING">Pending verification</option>
+                                    <option value="REJECTED">Rejected</option>
                                 </select>
                             </div>
                             <div class="col-12">
                                 <label class="form-label small fw-semibold">Short Description <span class="text-danger">*</span></label>
                                 <textarea id="siteFormDesc" class="form-control" rows="2" required
                                     placeholder="A brief one-sentence description of the heritage site."></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold" for="siteFormHistory">Historical background</label>
+                                <textarea id="siteFormHistory" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="siteFormSignificance">Cultural significance</label>
+                                <textarea id="siteFormSignificance" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="siteFormArchitecture">Architecture</label>
+                                <textarea id="siteFormArchitecture" class="form-control" rows="3"></textarea>
                             </div>
                             <div class="col-12">
                                 <label class="form-label small fw-semibold">Image URL</label>
@@ -152,6 +217,30 @@
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold">Entry Fee</label>
                                 <input id="siteFormFee" class="form-control" placeholder="e.g. Free / ₹25">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="siteFormDuration">Visit duration</label>
+                                <input id="siteFormDuration" class="form-control" placeholder="e.g. 45–60 min">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="siteFormDurationMinutes">Duration (minutes)</label>
+                                <input type="number" min="1" step="1" id="siteFormDurationMinutes" class="form-control">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold" for="siteFormGuidelines">Responsible visitor guidelines</label>
+                                <textarea id="siteFormGuidelines" class="form-control" rows="2" placeholder="One guideline per line"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="siteFormTags">Tags</label>
+                                <input id="siteFormTags" class="form-control" placeholder="Comma-separated tags">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="siteFormInterests">Interests</label>
+                                <input id="siteFormInterests" class="form-control" placeholder="Comma-separated interests">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold" for="siteFormSource">Source / citation</label>
+                                <input id="siteFormSource" class="form-control" placeholder="Source URL or attribution">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold">Latitude</label>
