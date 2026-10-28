@@ -121,6 +121,18 @@ describe("HeritageX Backend API Test Suite", () => {
     20000
   );
 
+  it(
+    "GET /api/heritage/:idOrSlug should find nearby sites when curated links are unavailable",
+    async () => {
+      const res = await request(app).get("/api/heritage/sabarmati-ashram");
+      expect(res.status).toBe(200);
+      expect(res.body.data.nearby.length).toBeGreaterThan(0);
+      expect(res.body.data.nearby.length).toBeLessThanOrEqual(5);
+      expect(res.body.data.nearby.every((site: { id: number }) => site.id !== res.body.data.id)).toBe(true);
+    },
+    20000
+  );
+
   // 4. Recommendation algorithm
   it(
     "POST /api/recommendations should return scored recommendations",

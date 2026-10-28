@@ -151,26 +151,47 @@ heritageRouter.get("/:idOrSlug", async (req: Request, res: Response): Promise<an
     return sendError(res, "NOT_FOUND", "Heritage site not found", undefined, 404);
   }
 
-  // Fetch nearby sites if nearbyPlaces IDs are defined
-  let nearbySites: any[] = [];
-  if (site.nearbyPlaces && site.nearbyPlaces.length > 0) {
-    nearbySites = await prisma.heritageSite.findMany({
+  const nearbySelect = {
+    id: true,
+    name: true,
+    slug: true,
+    categoryName: true,
+    image: true,
+    latitude: true,
+    longitude: true,
+    rating: true,
+    duration: true,
+  } as const;
+  let nearbySites = await prisma.heritageSite.findMany({
+    where: {
+      id: { in: site.nearbyPlaces ?? [] },
+      verification: VerificationStatus.VERIFIED,
+    },
+    select: nearbySelect,
+  });
+
+  if (nearbySites.length === 0) {
+    const nearbyCandidates = await prisma.heritageSite.findMany({
       where: {
-        id: { in: site.nearbyPlaces },
+        id: { not: site.id },
         verification: VerificationStatus.VERIFIED,
       },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        categoryName: true,
-        image: true,
-        latitude: true,
-        longitude: true,
-        rating: true,
-        duration: true,
-      },
+      select: nearbySelect,
     });
+
+    nearbySites = nearbyCandidates
+      .map((nearbySite) => ({
+        ...nearbySite,
+        distanceKm: distanceKm(
+          site.latitude,
+          site.longitude,
+          nearbySite.latitude,
+          nearbySite.longitude
+        ),
+      }))
+      .filter((nearbySite) => nearbySite.distanceKm <= 5)
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, 5);
   }
 
   return sendSuccess(res, {
