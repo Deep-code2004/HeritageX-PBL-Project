@@ -33,6 +33,10 @@ async function mockApi(page: Page, { authenticated = false } = {}) {
     await page.route("https://**/*", (route) => route.abort());
     await page.addInitScript(() => {
         window.HX_API_BASE_URL = `${window.location.origin}/api`;
+        // Blank the Maps key so tests without mockGoogleMaps always hit the
+        // "not configured" branch.  mockGoogleMaps overrides this with its own
+        // key via a later addInitScript, so those tests are unaffected.
+        window.HX_GOOGLE_MAPS_API_KEY = "";
     });
     await page.route("**/api/**", async (route: Route) => {
         const url = new URL(route.request().url());
