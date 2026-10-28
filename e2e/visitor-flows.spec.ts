@@ -1,5 +1,19 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 
+// Augment the browser Window type with HeritageX globals so TypeScript does
+// not raise TS2339 / TS2352 errors when the test scripts access them.
+declare global {
+    interface Window {
+        HX_API_BASE_URL: string;
+        HX_GOOGLE_MAPS_API_KEY: string;
+        hxGoogleMapsReady: Promise<unknown>;
+        hxGoogleMapsError: string | undefined;
+        __hxGoogleMapMarkers: number;
+        gm_authFailure: () => void;
+    }
+}
+
+
 const site = {
     id: 1,
     slug: "bhadra-fort",
